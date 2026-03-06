@@ -1,5 +1,10 @@
-export async function parseFile(file: File): Promise<string> {
+export async function parseFile(file: File): Promise<string | { content: string; isAudio: boolean }> {
   const extension = file.name.split('.').pop()?.toLowerCase();
+  const isAudio = file.type.startsWith('audio/') || extension === 'mp3' || extension === 'webm';
+
+  if (isAudio) {
+    return { content: "[AUDIO FILE - AWAITING AI TRANSCRIPTION]", isAudio: true };
+  }
 
   if (extension === 'txt' || extension === 'md') {
     return new Promise((resolve, reject) => {

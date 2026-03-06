@@ -3,10 +3,12 @@
 import { useEffect, useState } from 'react';
 import { getAllInsights, deleteInsight } from '@/lib/storage/localDbService';
 import { Insight } from '@/lib/schemas';
-import { Mic, FileText, File as FileIcon, ArrowRight, Trash } from 'lucide-react';
+import { Mic, FileText, File as FileIcon, ArrowRight, Trash, RefreshCw } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useUIStore } from '@/lib/store';
+import { useInsightSubscription } from '@/hooks/useInsightSubscription';
+import { checkStuckInsights } from '@/lib/utils/insightHealthCheck';
 
 export default function FilesPage() {
   const [insights, setInsights] = useState<Insight[]>([]);
@@ -15,37 +17,32 @@ export default function FilesPage() {
   const { showToast } = useUIStore();
   const router = useRouter();
 
+  useInsightSubscription();
+
   useEffect(() => {
-    let isMounted = true;
-
-    const fetchInsights = async () => {
-      try {
-        const data = await getAllInsights();
-        if (isMounted) {
-          // Sort by created_at descending
-          const sortedData = data.sort((a, b) => 
-            new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-          );
-          setInsights(sortedData);
-        }
-      } catch (error) {
-        console.error('Failed to fetch insights:', error);
-      } finally {
-        if (isMounted) {
-          setIsLoading(false);
-        }
-      }
+    const runHealthCheck = async () => {
+      await checkStuckInsights();
+      fetchInsights();
     };
+    runHealthCheck();
+  }, []);
 
+  const fetchInsights = async () => {
+    try {
+      const data = await getAllInsights();
+      const sortedData = data.sort((a, b) => 
+        new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+      );
+      setInsights(sortedData);
+    } catch (error) {
+      console.error('Failed to fetch insights:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
     fetchInsights();
-
-    // Poll for updates every few seconds to see processing status changes
-    const interval = setInterval(fetchInsights, 5000);
-
-    return () => {
-      isMounted = false;
-      clearInterval(interval);
-    };
   }, []);
 
   const formatDate = (dateString: string) => {
@@ -58,7 +55,6 @@ export default function FilesPage() {
   };
 
   const getIcon = (insight: Insight) => {
-    // Basic heuristic based on raw_content type or title
     if (insight.raw_content instanceof Blob && insight.raw_content.type.startsWith('audio/')) {
       return <Mic className="w-4 h-4 text-foreground/60" />;
     }
@@ -88,7 +84,7 @@ export default function FilesPage() {
         return (
           <div className="flex items-center gap-2">
             <span className="block w-2 h-2 rounded-full bg-purple-500 animate-pulse" />
-            <span className="hidden sm:inline text-xs text-foreground/50 uppercase tracking-wider">Analyzing</span>
+            <span className="hidden sm:inline text-xs text-foreground/50 uppercase tracking-wider">Synthesizing Activity...</span>
           </div>
         );
       case 'completed':
@@ -103,6 +99,7 @@ export default function FilesPage() {
           <div className="flex items-center gap-2">
             <span className="block w-2 h-2 rounded-full bg-red-500" />
             <span className="hidden sm:inline text-xs text-foreground/50 uppercase tracking-wider">Failed</span>
+            <button className="text-xs text-primary hover:underline ml-2">Retry</button>
           </div>
         );
       default:

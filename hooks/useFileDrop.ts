@@ -2,6 +2,7 @@ import { useState, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { saveInsight } from '@/lib/storage/localDbService';
 import { parseFile } from '@/lib/utils/fileParser';
+import { uploadAudio } from '@/lib/utils/audioUploader';
 import { useUIStore } from '@/lib/store';
 import type { Insight } from '@/lib/schemas';
 
@@ -45,12 +46,19 @@ export function useFileDrop() {
 
       try {
         const parsedContent = await parseFile(file);
+        
+        if (typeof parsedContent === 'object' && parsedContent.isAudio) {
+          showToast(`Uploading audio: ${file.name}`, 'info');
+          await uploadAudio(file);
+          continue;
+        }
+
         const now = new Date().toISOString();
         
         const newInsight: Insight = {
           id: crypto.randomUUID(),
           title: file.name,
-          raw_content: parsedContent,
+          raw_content: parsedContent as string,
           processing_status: 'local',
           created_at: now,
           updated_at: now,
