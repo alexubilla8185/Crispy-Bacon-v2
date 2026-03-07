@@ -3,14 +3,19 @@ import { NextResponse } from "next/server";
 
 export async function POST(req: Request) {
   try {
-    const { audioUrl, isDeepAnalysisEnabled } = await req.json();
+    const { audioUrl, mimeType, isDeepAnalysisEnabled } = await req.json();
     const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY! });
     
     const model = isDeepAnalysisEnabled ? "gemini-3.1-pro-preview" : "gemini-3-flash-preview";
 
     const response = await ai.models.generateContent({
       model,
-      contents: `Analyze this audio: ${audioUrl}`,
+      contents: {
+        parts: [
+          { text: "Analyze this audio and provide a structured summary, highlights, action items, topics, and sentiment." },
+          { inlineData: { data: audioUrl, mimeType: mimeType || 'audio/webm' } }
+        ]
+      },
       config: {
         responseMimeType: "application/json",
         responseSchema: {

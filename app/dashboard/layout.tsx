@@ -5,6 +5,7 @@ import Sidebar from '@/components/ui/Sidebar';
 import BottomNav from '@/components/ui/BottomNav';
 import ImportOrchestrator from '@/components/ImportOrchestrator';
 import PresenceInitializer from '@/components/PresenceInitializer';
+import InsightSubscriptionInitializer from '@/components/InsightSubscriptionInitializer';
 import { Toast } from '@/components/ui/Toast';
 
 export default async function DashboardLayout({
@@ -28,6 +29,7 @@ export default async function DashboardLayout({
 
   return (
     <div className="flex h-screen w-full bg-background text-foreground overflow-hidden">
+      <InsightSubscriptionInitializer />
       <ImportOrchestrator />
       <PresenceInitializer email={userEmail} />
       <Sidebar email={userEmail} />

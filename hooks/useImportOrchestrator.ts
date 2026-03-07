@@ -70,10 +70,11 @@ export function useImportOrchestrator() {
 
             // 2. Prepare content for API
             let base64Data = '';
+            let mimeType = 'audio/webm'; // Defaulting to webm for audio recordings
             let isText = false;
 
             if (insight.raw_content instanceof Blob || insight.raw_content instanceof File) {
-              const mimeType = insight.raw_content.type || 'application/octet-stream';
+              mimeType = insight.raw_content.type || 'audio/webm';
               
               if (mimeType.startsWith('text/')) {
                  base64Data = await insight.raw_content.text();
@@ -116,6 +117,7 @@ export function useImportOrchestrator() {
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ 
                 audioUrl: base64Data, 
+                mimeType,
                 isDeepAnalysisEnabled: false // Defaulting to false for background sync
               }),
             });
@@ -134,6 +136,9 @@ export function useImportOrchestrator() {
             await saveInsight(completedInsight);
             console.log(`Successfully imported insight: ${insight.id}`);
             showToast('Import analyzed & completed', 'success');
+            
+            // Navigate to the insight detail page
+            router.push(`/dashboard/files/${insight.id}`);
 
           } catch (error) {
             console.error(`Failed to import insight ${insight.id}:`, error);
