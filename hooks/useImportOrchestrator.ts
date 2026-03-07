@@ -1,7 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { getAllLocalInsights, getAllUploadingOrAnalyzingInsights, saveInsight } from '@/lib/storage/localDbService';
 import { useUIStore } from '@/lib/store';
-import { GoogleGenAI, Type } from "@google/genai";
 
 export function useImportOrchestrator() {
   const isSyncing = useRef(false);
@@ -66,11 +65,10 @@ export function useImportOrchestrator() {
 
             // 2. Prepare content for API
             let base64Data = '';
-            let mimeType = 'text/plain';
             let isText = false;
 
             if (insight.raw_content instanceof Blob || insight.raw_content instanceof File) {
-              mimeType = insight.raw_content.type || 'application/octet-stream';
+              const mimeType = insight.raw_content.type || 'application/octet-stream';
               
               if (mimeType.startsWith('text/')) {
                  base64Data = await insight.raw_content.text();
@@ -107,37 +105,18 @@ export function useImportOrchestrator() {
             const analyzingInsight = { ...uploadingInsight, processing_status: 'analyzing' as const };
             await saveInsight(analyzingInsight);
 
-            // 4. Send to Gemini API
-            const ai = new GoogleGenAI({ apiKey: process.env.NEXT_PUBLIC_GEMINI_API_KEY! });
-            
-            const parts: any[] = [];
-            if (isText) {
-                parts.push({ text: base64Data });
-            } else {
-                parts.push({ inlineData: { data: base64Data, mimeType } });
-            }
-
-            const response = await ai.models.generateContent({
-              model: "gemini-3-flash-preview",
-              contents: { parts },
-              config: {
-                responseMimeType: "application/json",
-                responseSchema: {
-                  type: Type.OBJECT,
-                  properties: {
-                    summary: { type: Type.STRING },
-                    highlights: { type: Type.ARRAY, items: { type: Type.STRING } },
-                    action_items: { type: Type.ARRAY, items: { type: Type.STRING } },
-                    topics: { type: Type.ARRAY, items: { type: Type.STRING } },
-                    sentiment: { type: Type.STRING, enum: ['POSITIVE', 'NEUTRAL', 'NEGATIVE', 'COMPLEX'] },
-                    reading_time: { type: Type.STRING },
-                  },
-                  required: ['summary', 'highlights', 'action_items', 'topics', 'sentiment', 'reading_time'],
-                },
-              },
+            // 4. Send to API Route
+            const response = await fetch('/api/analyze', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ 
+                audioUrl: base64Data, 
+                isDeepAnalysisEnabled: false // Defaulting to false for background sync
+              }),
             });
 
-            const parsedIntelligence = JSON.parse(response.text || '{}');
+            if (!response.ok) throw new Error('Analysis failed');
+            const parsedIntelligence = await response.json();
 
             // 5. Success: Update local DB status to completed and save the AI intelligence
             const completedInsight = {

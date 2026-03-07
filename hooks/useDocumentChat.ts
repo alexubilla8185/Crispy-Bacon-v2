@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import { GoogleGenAI } from "@google/genai";
 
 export type Message = {
   role: 'user' | 'model';
@@ -24,16 +23,19 @@ export function useDocumentChat(documentContext: string) {
     setIsLoading(true);
 
     try {
-      const ai = new GoogleGenAI({ apiKey: process.env.NEXT_PUBLIC_GEMINI_API_KEY! });
-      
-      const prompt = `Context: ${documentContext}\n\nMessages: ${updatedMessages.map(m => `${m.role}: ${m.text}`).join('\n')}`;
-      
-      const response = await ai.models.generateContent({
-        model: "gemini-3-flash-preview",
-        contents: prompt,
+      const response = await fetch('/api/analyze', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          audioUrl: `Context: ${documentContext}\n\nMessages: ${updatedMessages.map(m => `${m.role}: ${m.text}`).join('\n')}`,
+          isDeepAnalysisEnabled: false 
+        }),
       });
 
-      setMessages((prev) => [...prev, { role: 'model', text: response.text || '' }]);
+      if (!response.ok) throw new Error('Chat analysis failed');
+      const data = await response.json();
+
+      setMessages((prev) => [...prev, { role: 'model', text: data.summary || 'No response generated.' }]);
     } catch (error) {
       console.error("Chat error:", error);
       setMessages((prev) => [...prev, { role: 'model', text: "Sorry, I encountered an error while processing your request." }]);
