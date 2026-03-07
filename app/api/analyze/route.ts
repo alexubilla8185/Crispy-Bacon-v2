@@ -1,10 +1,12 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { NextResponse } from "next/server";
+import { createClient } from "@/lib/supabase/server";
 
 export async function POST(req: Request) {
   try {
-    const { audioUrl, mimeType, isDeepAnalysisEnabled } = await req.json();
-    const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY! });
+    const { insightId, audioUrl, mimeType, isDeepAnalysisEnabled } = await req.json();
+    const supabase = await createClient();
+    const ai = new GoogleGenAI({ apiKey: process.env.NEXT_PUBLIC_GEMINI_API_KEY! });
     
     const model = isDeepAnalysisEnabled ? "gemini-3.1-pro-preview" : "gemini-3-flash-preview";
 
@@ -34,7 +36,29 @@ export async function POST(req: Request) {
     });
     
     const cleanJson = response.text!.replace(/```json\n?|\n?```/g, "");
-    return NextResponse.json(JSON.parse(cleanJson));
+    const intelligence = JSON.parse(cleanJson);
+
+    // Update the insights table
+    const { error: updateError } = await supabase
+      .from('insights')
+      .update({
+        processing_status: 'completed',
+        summary: intelligence.summary,
+        highlights: intelligence.highlights,
+        action_items: intelligence.action_items,
+        topics: intelligence.topics,
+        sentiment: intelligence.sentiment,
+        intelligence: intelligence,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', insightId);
+
+    if (updateError) {
+      console.error('Database update error:', updateError);
+      return NextResponse.json({ error: 'Failed to update insight' }, { status: 500 });
+    }
+
+    return NextResponse.json({ success: true });
   } catch (error) {
     console.error('Server-side AI analysis error:', error);
     return NextResponse.json({ error: 'Failed to analyze content' }, { status: 500 });
