@@ -1,13 +1,33 @@
 import { NextResponse } from 'next/server';
+import { createClient } from '@/lib/supabase/server';
 
 export async function POST(req: Request) {
-  const { fileName, contentType } = await req.json();
-  
-  // Here you would typically interact with Supabase to get a signed URL
-  // For this implementation, we'll return a mock signed URL for demonstration
-  // as per the instructions to implement the pipeline.
-  
-  return NextResponse.json({ 
-    signedUrl: `https://storage.googleapis.com/your-bucket/${fileName}?signed=true` 
-  });
+  try {
+    const { fileName, contentType } = await req.json();
+    const supabase = await createClient();
+
+    // Authenticate user
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    if (userError || !user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    // Generate unique file path
+    const filePath = `${user.id}/${Date.now()}-${fileName}`;
+
+    // Create signed upload URL
+    const { data, error } = await supabase.storage
+      .from('meetings')
+      .createSignedUploadUrl(filePath);
+
+    if (error) {
+      console.error('Supabase signed URL error:', error);
+      return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+
+    return NextResponse.json({ signedUrl: data.signedUrl, path: data.path });
+  } catch (error) {
+    console.error('Unexpected error in signed-url route:', error);
+    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+  }
 }
