@@ -149,9 +149,9 @@ export default function InsightDetailPage({ params }: { params: Promise<{ id: st
       </div>
 
       <header className="mb-12">
-        {insight.audio_url && (
+        {dbInsight.audio_url && (
           <div className="mb-8">
-            <AudioPlayer audioPath={insight.audio_url} />
+            <AudioPlayer audioPath={dbInsight.audio_url} />
           </div>
         )}
         <div className="flex items-center gap-3 mb-4">
