@@ -79,6 +79,12 @@ export function useImportOrchestrator() {
 
           } catch (error) {
             console.error(`Failed to import insight ${insight.id}:`, error);
+            // Mark as failed locally to prevent infinite retries
+            await saveInsight({
+              ...insight,
+              processing_status: 'failed',
+              updated_at: new Date().toISOString(),
+            });
           }
         }
       } catch (error) {
