@@ -14,9 +14,10 @@ export async function uploadAudio(file: File | Blob): Promise<string> {
 
     // Upload
     setIsUploading(true);
+    const fileName = (file as File).name || 'recording';
     const response = await fetch('/api/upload/audio/signed-url', {
       method: 'POST',
-      body: JSON.stringify({ fileName: 'recording.webm', contentType: file.type }),
+      body: JSON.stringify({ fileName, contentType: file.type }),
     });
     const { signedUrl } = await response.json();
 
@@ -31,7 +32,9 @@ export async function uploadAudio(file: File | Blob): Promise<string> {
       setCurrentAudioUrl(url);
       return url;
     } else {
-      throw new Error('Upload failed');
+      const errorText = await uploadResponse.text();
+      console.error('Upload failed:', errorText);
+      throw new Error(`Upload failed: ${errorText}`);
     }
   } catch (error) {
     console.error('Upload error:', error);

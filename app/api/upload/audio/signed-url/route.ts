@@ -16,6 +16,7 @@ export async function POST(req: Request) {
     const filePath = `${user.id}/${Date.now()}-${fileName}`;
 
     // Create signed upload URL
+    console.log('Generating signed URL for path:', filePath);
     const { data, error } = await supabase.storage
       .from('meetings')
       .createSignedUploadUrl(filePath);
@@ -25,6 +26,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
+    console.log('Signed URL generated:', data);
     return NextResponse.json({ signedUrl: data.signedUrl, path: data.path });
   } catch (error) {
     console.error('Unexpected error in signed-url route:', error);

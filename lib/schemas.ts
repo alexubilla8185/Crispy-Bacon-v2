@@ -48,7 +48,7 @@ export type RegisterInput = z.infer<typeof RegisterSchema>;
 export const AudioSchema = z.object({
   file: z.instanceof(File).or(z.instanceof(Blob)),
   size: z.number().max(50 * 1024 * 1024, 'File size must be less than 50MB'),
-  type: z.enum(['audio/mpeg', 'audio/webm'], {
-    message: 'Only audio/mpeg or audio/webm are allowed',
+  type: z.enum(['audio/mpeg', 'audio/webm', 'audio/mp3'], {
+    message: 'Only audio/mpeg, audio/mp3, or audio/webm are allowed',
   }),
 });

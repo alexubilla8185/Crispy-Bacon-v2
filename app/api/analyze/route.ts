@@ -24,9 +24,15 @@ export async function POST(req: Request) {
     }
 
     // 2. Convert to Base64
-    const arrayBuffer = await fileBlob.arrayBuffer();
-    const base64Audio = Buffer.from(arrayBuffer).toString('base64');
-    console.log('File downloaded, size:', arrayBuffer.byteLength, 'Mime:', mimeType);
+    let base64Audio: string;
+    if (fileBlob instanceof Blob) {
+        const arrayBuffer = await fileBlob.arrayBuffer();
+        base64Audio = Buffer.from(arrayBuffer).toString('base64');
+    } else {
+        // Assume it's a Buffer
+        base64Audio = (fileBlob as Buffer).toString('base64');
+    }
+    console.log('File downloaded, size:', base64Audio.length, 'Mime:', mimeType);
 
     // 3. Determine mimeType
     let yourMimeType = mimeType;
