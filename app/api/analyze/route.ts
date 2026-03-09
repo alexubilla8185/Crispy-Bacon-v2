@@ -100,6 +100,18 @@ export async function POST(req: Request) {
     return NextResponse.json({ success: true });
   } catch (error: any) {
     console.error("CRITICAL API FAILURE:", error.message, error.stack);
+    
+    // Attempt to log the error to the database
+    if (insightId) {
+      await supabase
+        .from('insights')
+        .update({ 
+          processing_status: 'failed', 
+          summary: 'CRASH REPORT: ' + (error.message || String(error)) 
+        })
+        .eq('id', insightId);
+    }
+
     return NextResponse.json({ error: error.message || "Unknown Server Error" }, { status: 500 });
   }
 }
