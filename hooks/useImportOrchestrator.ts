@@ -31,7 +31,10 @@ export function useImportOrchestrator() {
           try {
             // 1. Upload to Supabase Storage
             const { data: { user } } = await supabase.auth.getUser();
-            if (!user) throw new Error('No user');
+            if (!user) {
+              console.warn('No user session available, skipping sync.');
+              return; // Return instead of failing the insight
+            }
 
             const fileName = `${Date.now()}-${insight.id}.webm`;
             const filePath = `${user.id}/${fileName}`;
