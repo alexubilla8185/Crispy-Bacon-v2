@@ -62,13 +62,30 @@ export function useImportOrchestrator() {
 
             const filePath = `${user.id}/${fileName}`;
             
-            const { error: uploadError } = await supabase.storage
+            // 1. Get Signed Upload URL
+            const { data: signedData, error: signedError } = await supabase.storage
               .from('meetings')
-              .upload(filePath, isDocument ? new Blob([insight.raw_content as string], { type: 'text/markdown' }) : (insight.raw_content as Blob), {
-                contentType: contentType
-              });
+              .createSignedUploadUrl(filePath);
+            
+            if (signedError) throw signedError;
 
-            if (uploadError) throw uploadError;
+            // 2. Upload using raw PUT request
+            const blob = isDocument ? new Blob([insight.raw_content as string], { type: 'text/markdown' }) : (insight.raw_content as Blob);
+            
+            if (blob.size < 1000) throw new Error("Blob is corrupted or empty before upload");
+
+            const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_DATABASE_URL;
+            const fullSignedUrl = `${supabaseUrl}${signedData.signedUrl}`;
+
+            const uploadResponse = await fetch(fullSignedUrl, {
+              method: 'PUT',
+              body: blob,
+              headers: {
+                'Content-Type': contentType
+              }
+            });
+
+            if (!uploadResponse.ok) throw new Error('Failed to upload file');
 
             // 2. Insert into Supabase DB
             const { data: dbInsight, error: dbError } = await supabase

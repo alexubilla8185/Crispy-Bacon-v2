@@ -45,15 +45,21 @@ export function useFileDrop() {
       }
 
       try {
-        const parsedContent = await parseFile(file);
-        
         const now = new Date().toISOString();
         const id = crypto.randomUUID();
+        
+        let rawContent: string | Blob;
+        
+        if (file.type.startsWith('audio/')) {
+          rawContent = file; // Save the raw File object directly
+        } else {
+          rawContent = await parseFile(file) as string;
+        }
         
         const newInsight: Insight = {
           id,
           title: file.name,
-          raw_content: parsedContent as string | Blob,
+          raw_content: rawContent,
           processing_status: 'local',
           created_at: now,
           updated_at: now,
