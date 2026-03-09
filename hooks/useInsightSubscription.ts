@@ -16,6 +16,7 @@ export function useInsightSubscription() {
           console.log("Realtime payload received:", payload);
           if (payload.new.processing_status === 'completed') {
             queryClient.invalidateQueries({ queryKey: ['insights'] });
+            queryClient.invalidateQueries({ queryKey: ['insight', payload.new.id] });
           }
         }
       )

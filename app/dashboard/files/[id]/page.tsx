@@ -120,15 +120,21 @@ export default function InsightDetailPage({ params }: { params: Promise<{ id: st
               {insight.intelligence.sentiment} · {insight.intelligence.reading_time}
             </div>
             
-            {insight.intelligence.topics && insight.intelligence.topics.length > 0 && (
-              <div className="flex flex-wrap gap-2">
-                {insight.intelligence.topics.map((topic, i) => (
-                  <span key={i} className="bg-primary/10 text-primary uppercase text-xs px-3 py-1 rounded-full font-medium tracking-wider">
-                    {topic}
-                  </span>
-                ))}
-              </div>
-            )}
+            {(() => {
+              let topics = insight.intelligence.topics;
+              if (typeof topics === 'string') {
+                try { topics = JSON.parse(topics); } catch { topics = []; }
+              }
+              return topics && Array.isArray(topics) && topics.length > 0 && (
+                <div className="flex flex-wrap gap-2">
+                  {topics.map((topic, i) => (
+                    <span key={i} className="bg-primary/10 text-primary uppercase text-xs px-3 py-1 rounded-full font-medium tracking-wider">
+                      {topic}
+                    </span>
+                  ))}
+                </div>
+              );
+            })()}
           </div>
         )}
       </header>
@@ -143,30 +149,42 @@ export default function InsightDetailPage({ params }: { params: Promise<{ id: st
                 {insight.intelligence.summary}
               </p>
               
-              {insight.intelligence?.highlights && insight.intelligence.highlights.length > 0 && (
-                <div>
-                  <h3 className="text-xs font-mono text-foreground/50 uppercase tracking-wider mb-3">Highlights</h3>
-                  <ul className="list-disc list-inside space-y-2 text-foreground/80">
-                    {insight.intelligence.highlights.map((highlight, i) => (
-                      <li key={i} className="leading-relaxed">{highlight}</li>
-                    ))}
-                  </ul>
-                </div>
-              )}
+              {(() => {
+                let highlights = insight.intelligence.highlights;
+                if (typeof highlights === 'string') {
+                  try { highlights = JSON.parse(highlights); } catch { highlights = []; }
+                }
+                return highlights && Array.isArray(highlights) && highlights.length > 0 && (
+                  <div>
+                    <h3 className="text-xs font-mono text-foreground/50 uppercase tracking-wider mb-3">Highlights</h3>
+                    <ul className="list-disc list-inside space-y-2 text-foreground/80">
+                      {highlights.map((highlight, i) => (
+                        <li key={i} className="leading-relaxed">{highlight}</li>
+                      ))}
+                    </ul>
+                  </div>
+                );
+              })()}
               
-              {insight.intelligence?.action_items && insight.intelligence.action_items.length > 0 && (
-                <div>
-                  <h3 className="text-xs font-mono text-foreground/50 uppercase tracking-wider mb-3">Action Items</h3>
-                  <ul className="space-y-3">
-                    {insight.intelligence.action_items.map((item, i) => (
-                      <li key={i} className="flex items-start gap-3 text-foreground/80">
-                        <input type="checkbox" disabled className="mt-1.5 rounded border-foreground/20 text-primary focus:ring-primary" />
-                        <span className="leading-relaxed">{item}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
+              {(() => {
+                let actionItems = insight.intelligence.action_items;
+                if (typeof actionItems === 'string') {
+                  try { actionItems = JSON.parse(actionItems); } catch { actionItems = []; }
+                }
+                return actionItems && Array.isArray(actionItems) && actionItems.length > 0 && (
+                  <div>
+                    <h3 className="text-xs font-mono text-foreground/50 uppercase tracking-wider mb-3">Action Items</h3>
+                    <ul className="space-y-3">
+                      {actionItems.map((item, i) => (
+                        <li key={i} className="flex items-start gap-3 text-foreground/80">
+                          <input type="checkbox" disabled className="mt-1.5 rounded border-foreground/20 text-primary focus:ring-primary" />
+                          <span className="leading-relaxed">{item}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                );
+              })()}
             </div>
           ) : (
             <div className="p-6 rounded-2xl border border-dashed border-foreground/20 flex items-center justify-center">
