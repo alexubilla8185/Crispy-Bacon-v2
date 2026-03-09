@@ -27,13 +27,11 @@ export async function POST(req: Request) {
 
     // 2. Convert to Base64
     let base64Audio: string;
-    if (fileBlob instanceof Blob) {
-        const arrayBuffer = await fileBlob.arrayBuffer();
-        base64Audio = Buffer.from(arrayBuffer).toString('base64');
-    } else {
-        // Assume it's a Buffer
-        base64Audio = (fileBlob as Buffer).toString('base64');
-    }
+    // Supabase storage download returns a Blob in the browser, but in Node/Next.js API routes it might be a Buffer or Blob depending on the SDK version.
+    // The safest way is to convert to ArrayBuffer first.
+    const arrayBuffer = await (fileBlob as any).arrayBuffer();
+    base64Audio = Buffer.from(arrayBuffer).toString('base64');
+    
     console.log('File downloaded, size:', base64Audio.length, 'Mime:', mimeType);
 
     // 3. Determine mimeType
@@ -68,16 +66,16 @@ export async function POST(req: Request) {
             action_items: { type: Type.ARRAY, items: { type: Type.STRING } },
             topics: { type: Type.ARRAY, items: { type: Type.STRING } },
             sentiment: { type: Type.STRING },
+            reading_time: { type: Type.STRING },
           },
-          required: ["summary", "highlights", "action_items", "topics", "sentiment"],
+          required: ["summary", "highlights", "action_items", "topics", "sentiment", "reading_time"],
         },
         systemInstruction: "You are a top-tier analyst. Provide dense, high-signal analysis."
       }
     });
     
     console.log('AI Response received:', response.text);
-    const cleanJson = response.text!.replace(/```json\n?|\n?```/g, "");
-    const intelligence = JSON.parse(cleanJson);
+    const intelligence = JSON.parse(response.text!);
 
     // Update the insights table
     const { error: updateError } = await supabase

@@ -11,6 +11,7 @@ import { ChatDrawer } from '@/components/ui/ChatDrawer';
 import { useUIStore } from '@/lib/store';
 import { useQuery } from '@tanstack/react-query';
 import { createClient } from '@/lib/supabase/client';
+import { AudioPlayer } from '@/components/dashboard/AudioPlayer';
 
 export default function InsightDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const resolvedParams = use(params);
@@ -148,6 +149,11 @@ export default function InsightDetailPage({ params }: { params: Promise<{ id: st
       </div>
 
       <header className="mb-12">
+        {insight.audio_url && (
+          <div className="mb-8">
+            <AudioPlayer audioPath={insight.audio_url} />
+          </div>
+        )}
         <div className="flex items-center gap-3 mb-4">
           <div className="w-10 h-10 rounded-full bg-primary/5 border border-foreground/10 flex items-center justify-center">
             {isAudio ? <Mic className="w-5 h-5 text-primary" /> : <FileText className="w-5 h-5 text-primary" />}
