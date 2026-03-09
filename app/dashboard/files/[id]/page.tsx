@@ -9,35 +9,55 @@ import { ArrowLeft, FileText, Mic, MessageSquare, Trash, ChevronDown } from 'luc
 import { TactileButton } from '@/components/ui/TactileButton';
 import { ChatDrawer } from '@/components/ui/ChatDrawer';
 import { useUIStore } from '@/lib/store';
+import { useQuery } from '@tanstack/react-query';
+import { createClient } from '@/lib/supabase/client';
 
 export default function InsightDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const resolvedParams = use(params);
   const id = resolvedParams.id;
   const router = useRouter();
   const { showToast } = useUIStore();
+  const supabase = createClient();
   
-  const [insight, setInsight] = useState<Insight | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [isRawTextOpen, setIsRawTextOpen] = useState(false);
 
-  useEffect(() => {
-    const fetchInsight = async () => {
-      try {
-        if (id) {
-          const data = await getInsight(id);
-          setInsight(data || null);
-        }
-      } catch (error) {
-        console.error('Failed to fetch insight:', error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
+  const { data: insight, isLoading } = useQuery({
+    queryKey: ['insight', id],
+    queryFn: async () => {
+      if (!id) return null;
+      
+      // 1. Fetch local data for title and raw_content
+      const localData = await getInsight(id);
+      
+      // 2. Fetch live Supabase row for AI results
+      const { data: supabaseData, error } = await supabase
+        .from('insights')
+        .select('*')
+        .eq('id', id)
+        .single();
+        
+      if (!localData && !supabaseData) return null;
 
-    fetchInsight();
-  }, [id]);
+      // Merge data: Supabase takes precedence for status and AI fields
+      return {
+        ...localData,
+        ...supabaseData,
+        // Ensure we keep local title and raw_content if Supabase doesn't have them
+        title: localData?.title || supabaseData?.title || 'Untitled Insight',
+        raw_content: localData?.raw_content || null,
+        // Use Supabase status if available, otherwise local
+        processing_status: supabaseData?.processing_status || localData?.processing_status || 'local',
+      } as Insight;
+    },
+    enabled: !!id,
+    refetchInterval: (query) => {
+      // Poll every 3 seconds if it's still analyzing or uploading, just in case realtime fails
+      const status = query.state.data?.processing_status;
+      return (status === 'analyzing' || status === 'uploading') ? 3000 : false;
+    }
+  });
 
   if (isLoading) {
     return (
@@ -66,10 +86,31 @@ export default function InsightDetailPage({ params }: { params: Promise<{ id: st
                   insight.title.toLowerCase().includes('audio') || 
                   insight.title.toLowerCase().includes('voice');
 
-  // Parse intelligence if it's a string
+  // Parse intelligence if it's a string (from Supabase)
   const intelligence = typeof insight.intelligence === 'string' 
     ? JSON.parse(insight.intelligence) 
-    : insight.intelligence;
+    : insight.intelligence || {};
+
+  // Aggressively map variables from either the top-level Supabase columns or the intelligence JSON
+  const dbInsight = insight as any;
+  const summary = dbInsight.summary || intelligence.summary;
+  const sentiment = dbInsight.sentiment || intelligence.sentiment;
+  const readingTime = dbInsight.reading_time || intelligence.reading_time;
+
+  let topics = dbInsight.topics || intelligence.topics;
+  if (typeof topics === 'string') {
+    try { topics = JSON.parse(topics); } catch { topics = []; }
+  }
+
+  let highlights = dbInsight.highlights || intelligence.highlights;
+  if (typeof highlights === 'string') {
+    try { highlights = JSON.parse(highlights); } catch { highlights = []; }
+  }
+
+  let actionItems = dbInsight.action_items || intelligence.action_items;
+  if (typeof actionItems === 'string') {
+    try { actionItems = JSON.parse(actionItems); } catch { actionItems = []; }
+  }
 
   const handleDelete = async () => {
     await deleteInsight(id);
@@ -112,34 +153,30 @@ export default function InsightDetailPage({ params }: { params: Promise<{ id: st
             {isAudio ? <Mic className="w-5 h-5 text-primary" /> : <FileText className="w-5 h-5 text-primary" />}
           </div>
           <span className="font-mono text-xs text-foreground/50 uppercase tracking-wider">
-            {new Date(insight.created_at).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
+            {new Date(insight.created_at || Date.now()).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
           </span>
         </div>
         <h1 className="text-3xl md:text-5xl font-serif font-medium tracking-tight leading-tight mb-4">
           {insight.title}
         </h1>
         
-        {intelligence && (
+        {(sentiment || readingTime || (topics && topics.length > 0)) && (
           <div className="flex flex-col gap-4">
             <div className="font-mono text-xs text-foreground/50 uppercase tracking-wider">
-              {intelligence.sentiment} · {intelligence.reading_time}
+              {sentiment && <span>{sentiment}</span>}
+              {sentiment && readingTime && <span> · </span>}
+              {readingTime && <span>{readingTime}</span>}
             </div>
             
-            {(() => {
-              let topics = intelligence.topics;
-              if (typeof topics === 'string') {
-                try { topics = JSON.parse(topics); } catch { topics = []; }
-              }
-              return topics && Array.isArray(topics) && topics.length > 0 && (
-                <div className="flex flex-wrap gap-2">
-                  {topics.map((topic, i) => (
-                    <span key={i} className="bg-primary/10 text-primary uppercase text-xs px-3 py-1 rounded-full font-medium tracking-wider">
-                      {topic}
-                    </span>
-                  ))}
-                </div>
-              );
-            })()}
+            {topics && Array.isArray(topics) && topics.length > 0 && (
+              <div className="flex flex-wrap gap-2">
+                {topics.map((topic: string, i: number) => (
+                  <span key={i} className="bg-primary/10 text-primary uppercase text-xs px-3 py-1 rounded-full font-medium tracking-wider">
+                    {topic}
+                  </span>
+                ))}
+              </div>
+            )}
           </div>
         )}
       </header>
@@ -148,48 +185,36 @@ export default function InsightDetailPage({ params }: { params: Promise<{ id: st
         {/* Summary Section */}
         <section>
           <h2 className="text-xs font-mono text-foreground/50 uppercase tracking-wider mb-4">AI Summary</h2>
-          {intelligence?.summary ? (
+          {summary && summary !== 'Analyzing...' ? (
             <div className="p-6 md:p-8 rounded-3xl bg-primary/5 border border-foreground/10 space-y-8">
               <p className="font-serif text-lg md:text-xl leading-relaxed text-foreground/90">
-                {intelligence.summary}
+                {summary}
               </p>
               
-              {(() => {
-                let highlights = intelligence.highlights;
-                if (typeof highlights === 'string') {
-                  try { highlights = JSON.parse(highlights); } catch { highlights = []; }
-                }
-                return highlights && Array.isArray(highlights) && highlights.length > 0 && (
-                  <div>
-                    <h3 className="text-xs font-mono text-foreground/50 uppercase tracking-wider mb-3">Highlights</h3>
-                    <ul className="list-disc list-inside space-y-2 text-foreground/80">
-                      {highlights.map((highlight, i) => (
-                        <li key={i} className="leading-relaxed">{highlight}</li>
-                      ))}
-                    </ul>
-                  </div>
-                );
-              })()}
+              {highlights && Array.isArray(highlights) && highlights.length > 0 && (
+                <div>
+                  <h3 className="text-xs font-mono text-foreground/50 uppercase tracking-wider mb-3">Highlights</h3>
+                  <ul className="list-disc list-inside space-y-2 text-foreground/80">
+                    {highlights.map((highlight: string, i: number) => (
+                      <li key={i} className="leading-relaxed">{highlight}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
               
-              {(() => {
-                let actionItems = intelligence.action_items;
-                if (typeof actionItems === 'string') {
-                  try { actionItems = JSON.parse(actionItems); } catch { actionItems = []; }
-                }
-                return actionItems && Array.isArray(actionItems) && actionItems.length > 0 && (
-                  <div>
-                    <h3 className="text-xs font-mono text-foreground/50 uppercase tracking-wider mb-3">Action Items</h3>
-                    <ul className="space-y-3">
-                      {actionItems.map((item, i) => (
-                        <li key={i} className="flex items-start gap-3 text-foreground/80">
-                          <input type="checkbox" disabled className="mt-1.5 rounded border-foreground/20 text-primary focus:ring-primary" />
-                          <span className="leading-relaxed">{item}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                );
-              })()}
+              {actionItems && Array.isArray(actionItems) && actionItems.length > 0 && (
+                <div>
+                  <h3 className="text-xs font-mono text-foreground/50 uppercase tracking-wider mb-3">Action Items</h3>
+                  <ul className="space-y-3">
+                    {actionItems.map((item: string, i: number) => (
+                      <li key={i} className="flex items-start gap-3 text-foreground/80">
+                        <input type="checkbox" disabled className="mt-1.5 rounded border-foreground/20 text-primary focus:ring-primary" />
+                        <span className="leading-relaxed">{item}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
             </div>
           ) : (
             <div className="p-6 rounded-2xl border border-dashed border-foreground/20 flex items-center justify-center">
@@ -224,7 +249,7 @@ export default function InsightDetailPage({ params }: { params: Promise<{ id: st
       <ChatDrawer 
         isOpen={isChatOpen} 
         onClose={() => setIsChatOpen(false)} 
-        documentContext={typeof insight.raw_content === 'string' ? insight.raw_content : insight.intelligence?.summary || ''} 
+        documentContext={typeof insight.raw_content === 'string' ? insight.raw_content : summary || ''} 
       />
 
       {showDeleteModal && (
@@ -253,3 +278,4 @@ export default function InsightDetailPage({ params }: { params: Promise<{ id: st
     </div>
   );
 }
+
