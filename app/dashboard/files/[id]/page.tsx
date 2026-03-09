@@ -66,6 +66,11 @@ export default function InsightDetailPage({ params }: { params: Promise<{ id: st
                   insight.title.toLowerCase().includes('audio') || 
                   insight.title.toLowerCase().includes('voice');
 
+  // Parse intelligence if it's a string
+  const intelligence = typeof insight.intelligence === 'string' 
+    ? JSON.parse(insight.intelligence) 
+    : insight.intelligence;
+
   const handleDelete = async () => {
     await deleteInsight(id);
     showToast('Import deleted', 'info');
@@ -114,14 +119,14 @@ export default function InsightDetailPage({ params }: { params: Promise<{ id: st
           {insight.title}
         </h1>
         
-        {insight.intelligence && (
+        {intelligence && (
           <div className="flex flex-col gap-4">
             <div className="font-mono text-xs text-foreground/50 uppercase tracking-wider">
-              {insight.intelligence.sentiment} · {insight.intelligence.reading_time}
+              {intelligence.sentiment} · {intelligence.reading_time}
             </div>
             
             {(() => {
-              let topics = insight.intelligence.topics;
+              let topics = intelligence.topics;
               if (typeof topics === 'string') {
                 try { topics = JSON.parse(topics); } catch { topics = []; }
               }
@@ -143,14 +148,14 @@ export default function InsightDetailPage({ params }: { params: Promise<{ id: st
         {/* Summary Section */}
         <section>
           <h2 className="text-xs font-mono text-foreground/50 uppercase tracking-wider mb-4">AI Summary</h2>
-          {insight.intelligence?.summary ? (
+          {intelligence?.summary ? (
             <div className="p-6 md:p-8 rounded-3xl bg-primary/5 border border-foreground/10 space-y-8">
               <p className="font-serif text-lg md:text-xl leading-relaxed text-foreground/90">
-                {insight.intelligence.summary}
+                {intelligence.summary}
               </p>
               
               {(() => {
-                let highlights = insight.intelligence.highlights;
+                let highlights = intelligence.highlights;
                 if (typeof highlights === 'string') {
                   try { highlights = JSON.parse(highlights); } catch { highlights = []; }
                 }
@@ -167,7 +172,7 @@ export default function InsightDetailPage({ params }: { params: Promise<{ id: st
               })()}
               
               {(() => {
-                let actionItems = insight.intelligence.action_items;
+                let actionItems = intelligence.action_items;
                 if (typeof actionItems === 'string') {
                   try { actionItems = JSON.parse(actionItems); } catch { actionItems = []; }
                 }
