@@ -4,7 +4,14 @@ import { createClient } from "@/lib/supabase/server";
 
 export async function POST(req: Request) {
   try {
-    const { insightId, audioUrl, mimeType, isDeepAnalysisEnabled } = await req.json();
+    const body = await req.json();
+    const { insightId, audioUrl, mimeType, isDeepAnalysisEnabled } = body;
+
+    // Validate required fields
+    if (!insightId || !audioUrl) {
+      return NextResponse.json({ success: false, error: "Missing required fields in payload." }, { status: 400 });
+    }
+
     const supabase = await createClient();
     const ai = new GoogleGenAI({ apiKey: process.env.NEXT_PUBLIC_GEMINI_API_KEY! });
     
@@ -55,12 +62,16 @@ export async function POST(req: Request) {
 
     if (updateError) {
       console.error('Database update error:', updateError);
-      return NextResponse.json({ error: 'Failed to update insight' }, { status: 500 });
+      return NextResponse.json({ success: false, error: 'Failed to update insight', details: updateError }, { status: 500 });
     }
 
     return NextResponse.json({ success: true });
-  } catch (error) {
-    console.error('Server-side AI analysis error:', error);
-    return NextResponse.json({ error: 'Failed to analyze content' }, { status: 500 });
+  } catch (error: any) {
+    console.error("🚨 ANALYZE API ERROR:", error);
+    return NextResponse.json({ 
+      success: false, 
+      error: error.message || String(error), 
+      stack: error.stack 
+    }, { status: 500 });
   }
 }
