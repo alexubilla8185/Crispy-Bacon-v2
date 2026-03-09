@@ -44,12 +44,29 @@ export function useImportOrchestrator() {
             }
 
             const isDocument = typeof insight.raw_content === 'string';
-            const fileName = isDocument ? `${Date.now()}-${insight.id}.md` : `${Date.now()}-${insight.id}.webm`;
+            let fileName = '';
+            let contentType = '';
+            let mimeType = '';
+
+            if (isDocument) {
+              fileName = `${Date.now()}-${insight.id}.md`;
+              contentType = 'text/markdown';
+              mimeType = 'text/markdown';
+            } else {
+              const blob = insight.raw_content as Blob;
+              mimeType = blob.type || 'audio/webm';
+              const ext = mimeType.includes('mpeg') || mimeType.includes('mp3') ? 'mp3' : 'webm';
+              fileName = `${Date.now()}-${insight.id}.${ext}`;
+              contentType = mimeType;
+            }
+
             const filePath = `${user.id}/${fileName}`;
             
             const { error: uploadError } = await supabase.storage
               .from('meetings')
-              .upload(filePath, isDocument ? new Blob([insight.raw_content as string], { type: 'text/markdown' }) : (insight.raw_content as Blob));
+              .upload(filePath, isDocument ? new Blob([insight.raw_content as string], { type: 'text/markdown' }) : (insight.raw_content as Blob), {
+                contentType: contentType
+              });
 
             if (uploadError) throw uploadError;
 
@@ -85,7 +102,7 @@ export function useImportOrchestrator() {
               body: JSON.stringify({ 
                 insightId: dbInsight.id,
                 audioUrl: filePath,
-                mimeType: isDocument ? 'text/markdown' : 'audio/webm',
+                mimeType: mimeType,
                 isDeepAnalysisEnabled: false
               }),
             });
