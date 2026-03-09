@@ -17,20 +17,17 @@ export function useImportOrchestrator() {
       try {
         isSyncing.current = true;
         
-        const pendingInsights = await getAllLocalInsights();
-        console.log('Pending insights:', pendingInsights);
+        const allInsights = await getAllLocalInsights();
+        const pendingInsights = allInsights.filter(i => i.processing_status === 'local');
         
-        if (!pendingInsights || pendingInsights.length === 0) {
+        if (pendingInsights.length === 0) {
           isSyncing.current = false;
           return;
         }
 
-        for (const insight of pendingInsights) {
-          console.log('Processing insight:', insight.id, 'Status:', insight.processing_status);
-          
-          // Only process insights that are strictly 'local'
-          if (insight.processing_status !== 'local') continue;
+        console.log(`Syncing ${pendingInsights.length} pending insights...`);
 
+        for (const insight of pendingInsights) {
           try {
             // 0. Mark as uploading
             await saveInsight({
@@ -107,6 +104,7 @@ export function useImportOrchestrator() {
 
           } catch (error) {
             console.error(`Failed to import insight ${insight.id}:`, error);
+            showToast(`Analysis failed for ${insight.title}: ${error instanceof Error ? error.message : 'Unknown error'}`, 'error');
             // Forcefully mark as failed to prevent any further retries
             await saveInsight({
               ...insight,

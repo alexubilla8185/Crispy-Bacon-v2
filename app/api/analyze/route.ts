@@ -26,6 +26,7 @@ export async function POST(req: Request) {
     // 2. Convert to Base64
     const arrayBuffer = await fileBlob.arrayBuffer();
     const base64Audio = Buffer.from(arrayBuffer).toString('base64');
+    console.log('File downloaded, size:', arrayBuffer.byteLength, 'Mime:', mimeType);
 
     // 3. Determine mimeType
     let yourMimeType = mimeType;
@@ -34,10 +35,12 @@ export async function POST(req: Request) {
       else if (audioUrl.endsWith('.md')) yourMimeType = 'text/markdown';
       else yourMimeType = 'audio/webm';
     }
+    console.log('Using MimeType:', yourMimeType);
 
     const ai = new GoogleGenAI({ apiKey: process.env.NEXT_PUBLIC_GEMINI_API_KEY! });
     
     const model = isDeepAnalysisEnabled ? "gemini-3.1-pro-preview" : "gemini-3-flash-preview";
+    console.log('Calling AI model:', model);
 
     const response = await ai.models.generateContent({
       model,
@@ -64,6 +67,7 @@ export async function POST(req: Request) {
       }
     });
     
+    console.log('AI Response received:', response.text);
     const cleanJson = response.text!.replace(/```json\n?|\n?```/g, "");
     const intelligence = JSON.parse(cleanJson);
 
