@@ -24,6 +24,8 @@ export default function InsightDetailPage({ params }: { params: Promise<{ id: st
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [isRawTextOpen, setIsRawTextOpen] = useState(false);
 
+  const [isRetrying, setIsRetrying] = useState(false);
+
   const { data: localInsight, isLoading: isLocalLoading } = useQuery({
     queryKey: ['localInsight', id],
     queryFn: () => getInsight(id),
@@ -53,6 +55,38 @@ export default function InsightDetailPage({ params }: { params: Promise<{ id: st
   } as Insight : null;
 
   const isLoading = isLocalLoading || (isSupabaseLoading && !supabaseInsight);
+
+  const isTimedOut = insight?.processing_status === 'analyzing' && 
+    insight?.updated_at && 
+    (Date.now() - new Date(insight.updated_at).getTime() > 10 * 60 * 1000);
+
+  const handleRetry = async () => {
+    const dbInsight = insight as any;
+    if (!insight || !dbInsight.audio_url) return;
+    setIsRetrying(true);
+    try {
+      const response = await fetch('/api/analyze', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          insightId: insight.id,
+          audioUrl: dbInsight.audio_url,
+          mimeType: insight.raw_content instanceof Blob ? insight.raw_content.type : 'audio/webm',
+          isDeepAnalysisEnabled: false
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Retry failed');
+      }
+      showToast('Analysis restarted', 'success');
+    } catch (error) {
+      console.error('Retry error:', error);
+      showToast('Failed to restart analysis', 'error');
+    } finally {
+      setIsRetrying(false);
+    }
+  };
 
   if (isLoading) {
     return (
@@ -107,6 +141,8 @@ export default function InsightDetailPage({ params }: { params: Promise<{ id: st
     try { actionItems = JSON.parse(actionItems); } catch { actionItems = []; }
   }
 
+  const isAudioFile = dbInsight.audio_url && !dbInsight.audio_url.endsWith('.md') && !dbInsight.audio_url.endsWith('.txt');
+
   const handleDelete = async () => {
     await deleteInsight(id);
     showToast('Import deleted', 'info');
@@ -143,7 +179,7 @@ export default function InsightDetailPage({ params }: { params: Promise<{ id: st
       </div>
 
       <header className="mb-12">
-        {dbInsight.audio_url && (
+        {isAudioFile && (
           <div className="mb-8">
             <AudioPlayer audioPath={dbInsight.audio_url} />
           </div>
@@ -216,11 +252,49 @@ export default function InsightDetailPage({ params }: { params: Promise<{ id: st
                 </div>
               )}
             </div>
-          ) : (
-            <div className="p-6 rounded-2xl border border-dashed border-foreground/20 flex items-center justify-center">
-              <span className="font-mono text-sm text-foreground/50">
-                {insight.processing_status === 'failed' ? 'Analysis failed.' : 'Analysis is being generated...'}
+          ) : insight.processing_status === 'failed' || isTimedOut ? (
+            <div className="p-6 rounded-2xl border border-dashed border-red-500/20 bg-red-500/5 flex flex-col items-center justify-center text-center gap-4">
+              <span className="font-mono text-sm text-red-500/80">
+                Analysis failed or timed out.
               </span>
+              <button 
+                onClick={handleRetry}
+                disabled={isRetrying}
+                className="px-4 py-2 rounded-full bg-red-500 text-white text-sm font-medium hover:bg-red-600 transition-colors disabled:opacity-50"
+              >
+                {isRetrying ? 'Retrying...' : 'Retry Analysis'}
+              </button>
+            </div>
+          ) : (
+            <div className="p-6 md:p-8 rounded-3xl bg-primary/5 border border-foreground/10 space-y-8">
+              <div className="space-y-3">
+                <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded-md animate-pulse w-full"></div>
+                <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded-md animate-pulse w-11/12"></div>
+                <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded-md animate-pulse w-4/5"></div>
+              </div>
+              
+              <div>
+                <h3 className="text-xs font-mono text-foreground/50 uppercase tracking-wider mb-3">Highlights</h3>
+                <div className="space-y-3">
+                  <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded-md animate-pulse w-3/4"></div>
+                  <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded-md animate-pulse w-5/6"></div>
+                  <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded-md animate-pulse w-2/3"></div>
+                </div>
+              </div>
+              
+              <div>
+                <h3 className="text-xs font-mono text-foreground/50 uppercase tracking-wider mb-3">Action Items</h3>
+                <div className="space-y-3">
+                  <div className="flex items-center gap-3">
+                    <div className="w-4 h-4 rounded bg-gray-200 dark:bg-gray-700 animate-pulse"></div>
+                    <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded-md animate-pulse w-1/2"></div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <div className="w-4 h-4 rounded bg-gray-200 dark:bg-gray-700 animate-pulse"></div>
+                    <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded-md animate-pulse w-2/3"></div>
+                  </div>
+                </div>
+              </div>
             </div>
           )}
         </section>

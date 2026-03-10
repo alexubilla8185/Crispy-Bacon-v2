@@ -45,8 +45,11 @@ export async function POST(req: Request) {
 
     const ai = new GoogleGenAI({ apiKey: process.env.NEXT_PUBLIC_GEMINI_API_KEY! });
     
-    const model = isDeepAnalysisEnabled ? "gemini-3.1-pro-preview" : "gemini-3-flash-preview";
-    console.log('Calling AI model:', model);
+    // Determine if audio is > 15 minutes (approx 15MB for compressed audio)
+    const isLongAudio = base64Audio.length > 15 * 1024 * 1024 * 1.33; // 15MB * base64 overhead
+    const useProModel = isDeepAnalysisEnabled || isLongAudio;
+    const model = useProModel ? "gemini-3.1-pro-preview" : "gemini-3-flash-preview";
+    console.log('Calling AI model:', model, 'isDeepAnalysisEnabled:', isDeepAnalysisEnabled, 'isLongAudio:', isLongAudio);
 
     const response = await ai.models.generateContent({
       model,

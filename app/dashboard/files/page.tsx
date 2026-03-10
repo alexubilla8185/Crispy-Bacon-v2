@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { getAllInsights, deleteInsight } from '@/lib/storage/localDbService';
 import { Insight } from '@/lib/schemas';
 import { Mic, FileText, File as FileIcon, ArrowRight, Trash, RefreshCw } from 'lucide-react';
@@ -9,41 +9,47 @@ import { useRouter } from 'next/navigation';
 import { useUIStore } from '@/lib/store';
 import { useInsightSubscription } from '@/hooks/useInsightSubscription';
 import { checkStuckInsights } from '@/lib/utils/insightHealthCheck';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { createClient } from '@/lib/supabase/client';
 
 export default function FilesPage() {
-  const [insights, setInsights] = useState<Insight[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
   const [itemToDelete, setItemToDelete] = useState<string | null>(null);
   const { showToast } = useUIStore();
   const router = useRouter();
+  const supabase = createClient();
+  const queryClient = useQueryClient();
 
   useInsightSubscription();
 
-  useEffect(() => {
-    const runHealthCheck = async () => {
+  const { data: localInsights = [], isLoading: isLocalLoading } = useQuery({
+    queryKey: ['localInsights'],
+    queryFn: async () => {
       await checkStuckInsights();
-      fetchInsights();
-    };
-    runHealthCheck();
-  }, []);
-
-  const fetchInsights = async () => {
-    try {
       const data = await getAllInsights();
-      const sortedData = data.sort((a, b) => 
-        new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-      );
-      setInsights(sortedData);
-    } catch (error) {
-      console.error('Failed to fetch insights:', error);
-    } finally {
-      setIsLoading(false);
+      return data.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
     }
-  };
+  });
 
-  useEffect(() => {
-    fetchInsights();
-  }, []);
+  const { data: supabaseInsights = [], isLoading: isSupabaseLoading } = useQuery({
+    queryKey: ['insights'],
+    queryFn: async () => {
+      const { data, error } = await supabase.from('insights').select('*');
+      if (error) throw error;
+      return data;
+    }
+  });
+
+  const isLoading = isLocalLoading || isSupabaseLoading;
+
+  const insights = localInsights.map(local => {
+    const remote = supabaseInsights.find(r => r.id === local.id);
+    return {
+      ...local,
+      ...remote,
+      title: remote?.title || local.title,
+      processing_status: remote?.processing_status || local.processing_status,
+    } as Insight;
+  });
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -99,7 +105,6 @@ export default function FilesPage() {
           <div className="flex items-center gap-2">
             <span className="block w-2 h-2 rounded-full bg-red-500" />
             <span className="hidden sm:inline text-xs text-foreground/50 uppercase tracking-wider">Failed</span>
-            <button className="text-xs text-primary hover:underline ml-2">Retry</button>
           </div>
         );
       default:
@@ -111,7 +116,7 @@ export default function FilesPage() {
     if (itemToDelete) {
       await deleteInsight(itemToDelete);
       showToast('Import deleted', 'info');
-      setInsights(prev => prev.filter(i => i.id !== itemToDelete));
+      queryClient.invalidateQueries({ queryKey: ['localInsights'] });
       setItemToDelete(null);
     }
   };
