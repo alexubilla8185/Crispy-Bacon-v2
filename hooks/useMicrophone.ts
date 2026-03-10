@@ -172,7 +172,7 @@ export function useMicrophone() {
 
     audioChunksRef.current = [];
     setRecordingTime(0);
-  }, [cleanup]);
+  }, [cleanup, router]);
 
   useEffect(() => {
     return () => {

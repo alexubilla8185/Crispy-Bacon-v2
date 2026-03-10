@@ -61,6 +61,7 @@ export async function POST(req: Request) {
         responseSchema: {
           type: Type.OBJECT,
           properties: {
+            title: { type: Type.STRING, description: "A short, descriptive, contextual title for this meeting or note, max 6 words" },
             summary: { type: Type.STRING },
             highlights: { type: Type.ARRAY, items: { type: Type.STRING } },
             action_items: { type: Type.ARRAY, items: { type: Type.STRING } },
@@ -68,7 +69,7 @@ export async function POST(req: Request) {
             sentiment: { type: Type.STRING },
             reading_time: { type: Type.STRING },
           },
-          required: ["summary", "highlights", "action_items", "topics", "sentiment", "reading_time"],
+          required: ["title", "summary", "highlights", "action_items", "topics", "sentiment", "reading_time"],
         },
         systemInstruction: "You are a top-tier analyst. Provide dense, high-signal analysis."
       }
@@ -82,6 +83,7 @@ export async function POST(req: Request) {
       .from('insights')
       .update({
         processing_status: 'completed',
+        title: intelligence.title,
         summary: intelligence.summary,
         highlights: intelligence.highlights,
         action_items: intelligence.action_items,

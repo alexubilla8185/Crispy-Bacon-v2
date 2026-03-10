@@ -24,41 +24,35 @@ export default function InsightDetailPage({ params }: { params: Promise<{ id: st
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [isRawTextOpen, setIsRawTextOpen] = useState(false);
 
-  const { data: insight, isLoading } = useQuery({
-    queryKey: ['insight', id],
+  const { data: localInsight, isLoading: isLocalLoading } = useQuery({
+    queryKey: ['localInsight', id],
+    queryFn: () => getInsight(id),
+    enabled: !!id,
+  });
+
+  const { data: supabaseInsight, isLoading: isSupabaseLoading } = useQuery({
+    queryKey: ['supabaseInsight', id],
     queryFn: async () => {
       if (!id) return null;
-      
-      // 1. Fetch local data for title and raw_content
-      const localData = await getInsight(id);
-      
-      // 2. Fetch live Supabase row for AI results
-      const { data: supabaseData, error } = await supabase
+      const { data, error } = await supabase
         .from('insights')
         .select('*')
         .eq('id', id)
-        .single();
-        
-      if (!localData && !supabaseData) return null;
-
-      // Merge data: Supabase takes precedence for status and AI fields
-      return {
-        ...localData,
-        ...supabaseData,
-        // Ensure we keep local title and raw_content if Supabase doesn't have them
-        title: localData?.title || supabaseData?.title || 'Untitled Insight',
-        raw_content: localData?.raw_content || null,
-        // Use Supabase status if available, otherwise local
-        processing_status: supabaseData?.processing_status || localData?.processing_status || 'local',
-      } as Insight;
+        .maybeSingle();
+      if (error) throw error;
+      return data;
     },
-    enabled: !!id,
-    refetchInterval: (query) => {
-      // Poll every 3 seconds if it's still analyzing or uploading, just in case realtime fails
-      const status = query.state.data?.processing_status;
-      return (status === 'analyzing' || status === 'uploading') ? 3000 : false;
-    }
+    enabled: !!id && localInsight?.processing_status !== 'local' && localInsight?.processing_status !== 'uploading',
   });
+
+  const insight = localInsight ? {
+    ...localInsight,
+    ...supabaseInsight,
+    title: supabaseInsight?.title || localInsight.title || 'Untitled Insight',
+    processing_status: supabaseInsight?.processing_status || localInsight.processing_status || 'local',
+  } as Insight : null;
+
+  const isLoading = isLocalLoading || (isSupabaseLoading && !supabaseInsight);
 
   if (isLoading) {
     return (
@@ -159,7 +153,7 @@ export default function InsightDetailPage({ params }: { params: Promise<{ id: st
             {isAudio ? <Mic className="w-5 h-5 text-primary" /> : <FileText className="w-5 h-5 text-primary" />}
           </div>
           <span className="font-mono text-xs text-foreground/50 uppercase tracking-wider">
-            {new Date(insight.created_at || Date.now()).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
+            {new Date(insight.created_at).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
           </span>
         </div>
         <h1 className="text-3xl md:text-5xl font-serif font-medium tracking-tight leading-tight mb-4">
