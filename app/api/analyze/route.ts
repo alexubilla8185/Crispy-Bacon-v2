@@ -50,7 +50,7 @@ export async function POST(req: Request) {
     console.log('Using MimeType:', yourMimeType);
 
     // Initialize SDK inside handler
-    const apiKey = process.env.NEXT_PUBLIC_GEMINI_API_KEY;
+    const apiKey = process.env.API_KEY;
     if (!apiKey) { throw new Error("API_KEY is missing from environment variables"); }
     const ai = new GoogleGenAI({ apiKey });
     
