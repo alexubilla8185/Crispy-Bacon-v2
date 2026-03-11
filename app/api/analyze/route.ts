@@ -2,6 +2,8 @@ import { GoogleGenAI, Type } from "@google/genai";
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 
+export const runtime = 'edge';
+
 export async function POST(req: Request) {
   const supabase = await createClient();
   let insightId: string | undefined;
@@ -52,7 +54,7 @@ export async function POST(req: Request) {
     // Determine if audio is > 15 minutes (approx 15MB for compressed audio)
     const isLongAudio = base64Audio && base64Audio.length > 15 * 1024 * 1024 * 1.33; // 15MB * base64 overhead
     const useProModel = isDeepAnalysisEnabled || isLongAudio;
-    const appliedModel = useProModel ? "gemini-3.1-pro-preview" : "gemini-flash-latest";
+    const appliedModel = useProModel ? "gemini-3.1-pro-preview" : "gemini-3.1-flash-lite-preview";
     console.log('Calling AI model:', appliedModel, 'isDeepAnalysisEnabled:', isDeepAnalysisEnabled, 'isLongAudio:', !!isLongAudio);
 
     const startTime = Date.now();
@@ -92,8 +94,8 @@ export async function POST(req: Request) {
     const aiParsedData = JSON.parse(response.text!);
     const finalIntelligence = { ...aiParsedData, metadata: { model: appliedModel, duration: duration + 's' } };
 
-    // Update the insights table
-    const { error: updateError } = await supabase
+    // Non-blocking Database Update
+    supabase
       .from('insights')
       .update({
         processing_status: 'completed',
@@ -106,26 +108,27 @@ export async function POST(req: Request) {
         intelligence: finalIntelligence,
         updated_at: new Date().toISOString(),
       })
-      .eq('id', insightId);
+      .eq('id', insightId)
+      .then(({ error }) => {
+        if (error) console.error('Database update error:', error);
+      });
 
-    if (updateError) {
-      console.error('Database update error:', updateError);
-      return NextResponse.json({ success: false, error: 'Failed to update insight', details: updateError }, { status: 500 });
-    }
-
-    return NextResponse.json({ success: true });
+    return NextResponse.json({ success: true, intelligence: finalIntelligence });
   } catch (error: any) {
     console.error("CRITICAL API FAILURE:", error.message, error.stack);
     
     // Attempt to log the error to the database
     if (insightId) {
-      await supabase
+      supabase
         .from('insights')
         .update({ 
           processing_status: 'failed', 
           summary: 'CRASH REPORT: ' + (error.message || String(error)) 
         })
-        .eq('id', insightId);
+        .eq('id', insightId)
+        .then(({ error }) => {
+          if (error) console.error('Database update error:', error);
+        });
     }
 
     return NextResponse.json({ error: error.message || "Unknown Server Error" }, { status: 500 });

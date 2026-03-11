@@ -137,10 +137,14 @@ export function useImportOrchestrator() {
               throw new Error(errorData.error || 'Analysis failed');
             }
 
-            // 5. Mark as completed in local DB
+            const { intelligence } = await response.json();
+
+            // 5. Mark as completed in local DB immediately
             await saveInsight({
               ...insight,
               processing_status: 'completed',
+              intelligence: intelligence,
+              title: intelligence.title,
               updated_at: new Date().toISOString(),
             });
 
