@@ -14,10 +14,14 @@ export function AudioPlayer({ audioPath }: AudioPlayerProps) {
   const [playbackRate, setPlaybackRate] = useState(1);
   const [progress, setProgress] = useState(0);
   const audioRef = useRef<HTMLAudioElement>(null);
+  const fetchedPathRef = useRef<string | null>(null);
   const supabase = createClient();
 
   useEffect(() => {
     const getSignedUrl = async () => {
+      if (!audioPath || fetchedPathRef.current === audioPath) return;
+      fetchedPathRef.current = audioPath;
+      
       console.log('Generating signed URL for:', audioPath);
       const { data, error } = await supabase.storage
         .from('meetings')
@@ -28,6 +32,7 @@ export function AudioPlayer({ audioPath }: AudioPlayerProps) {
         setSignedUrl(data.signedUrl);
       } else {
         console.error('Error generating signed URL:', error);
+        fetchedPathRef.current = null; // Reset on error so it can retry
       }
     };
 

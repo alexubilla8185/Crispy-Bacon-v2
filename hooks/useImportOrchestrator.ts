@@ -4,6 +4,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { getAllLocalInsights, saveInsight, getInsight } from '@/lib/storage/localDbService';
 import { useUIStore } from '@/lib/store';
 import { createClient } from '@/lib/supabase/client';
+import { shouldUpdateStatus } from '@/lib/utils';
 
 export function useImportOrchestrator() {
   const isSyncing = useRef(false);
@@ -32,11 +33,14 @@ export function useImportOrchestrator() {
         for (const insight of pendingInsights) {
           try {
             // 0. Mark as uploading
-            await saveInsight({
-              ...insight,
-              processing_status: 'uploading',
-              updated_at: new Date().toISOString(),
-            });
+            const currentInsight = await getInsight(insight.id);
+            if (currentInsight && shouldUpdateStatus(currentInsight.processing_status, 'uploading')) {
+              await saveInsight({
+                ...currentInsight,
+                processing_status: 'uploading',
+                updated_at: new Date().toISOString(),
+              });
+            }
 
             // 1. Upload to Supabase Storage (Only for audio)
             const { data: { user } } = await supabase.auth.getUser();
@@ -107,11 +111,14 @@ export function useImportOrchestrator() {
             if (dbError) throw dbError;
 
             // Mark as analyzing locally
-            await saveInsight({
-              ...insight,
-              processing_status: 'analyzing',
-              updated_at: new Date().toISOString(),
-            });
+            const localInsightAnalyzing = await getInsight(insight.id);
+            if (localInsightAnalyzing && shouldUpdateStatus(localInsightAnalyzing.processing_status, 'analyzing')) {
+              await saveInsight({
+                ...localInsightAnalyzing,
+                processing_status: 'analyzing',
+                updated_at: new Date().toISOString(),
+              });
+            }
 
             // 3. Navigate immediately
             router.push(`/dashboard/files/${dbInsight.id}`);

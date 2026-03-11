@@ -12,6 +12,7 @@ import { useUIStore } from '@/lib/store';
 import { useQuery } from '@tanstack/react-query';
 import { createClient } from '@/lib/supabase/client';
 import { AudioPlayer } from '@/components/dashboard/AudioPlayer';
+import { shouldUpdateStatus } from '@/lib/utils';
 
 export default function InsightDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const resolvedParams = use(params);
@@ -47,11 +48,15 @@ export default function InsightDetailPage({ params }: { params: Promise<{ id: st
     enabled: !!id && localInsight?.processing_status !== 'local' && localInsight?.processing_status !== 'uploading',
   });
 
+  const finalStatus = shouldUpdateStatus(localInsight?.processing_status, supabaseInsight?.processing_status)
+    ? supabaseInsight?.processing_status
+    : localInsight?.processing_status;
+
   const insight = localInsight ? {
     ...localInsight,
     ...supabaseInsight,
     title: supabaseInsight?.title || localInsight.title || 'Untitled Insight',
-    processing_status: supabaseInsight?.processing_status || localInsight.processing_status || 'local',
+    processing_status: finalStatus || 'local',
   } as Insight : null;
 
   const isLoading = isLocalLoading || (isSupabaseLoading && !supabaseInsight);

@@ -11,6 +11,7 @@ import { useInsightSubscription } from '@/hooks/useInsightSubscription';
 import { checkStuckInsights } from '@/lib/utils/insightHealthCheck';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { createClient } from '@/lib/supabase/client';
+import { shouldUpdateStatus } from '@/lib/utils';
 
 export default function FilesPage() {
   const [itemToDelete, setItemToDelete] = useState<string | null>(null);
@@ -43,11 +44,14 @@ export default function FilesPage() {
 
   const insights = localInsights.map(local => {
     const remote = supabaseInsights.find(r => r.id === local.id);
+    const finalStatus = shouldUpdateStatus(local.processing_status, remote?.processing_status)
+      ? remote?.processing_status
+      : local.processing_status;
     return {
       ...local,
       ...remote,
       title: remote?.title || local.title,
-      processing_status: remote?.processing_status || local.processing_status,
+      processing_status: finalStatus || local.processing_status,
     } as Insight;
   });
 
