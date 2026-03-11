@@ -49,7 +49,10 @@ export async function POST(req: Request) {
     }
     console.log('Using MimeType:', yourMimeType);
 
-    const ai = new GoogleGenAI({ apiKey: process.env.NEXT_PUBLIC_GEMINI_API_KEY! });
+    // Initialize SDK inside handler
+    const apiKey = process.env.NEXT_PUBLIC_GEMINI_API_KEY;
+    if (!apiKey) { throw new Error("API_KEY is missing from environment variables"); }
+    const ai = new GoogleGenAI({ apiKey });
     
     // Determine if audio is > 15 minutes (approx 15MB for compressed audio)
     const isLongAudio = base64Audio && base64Audio.length > 15 * 1024 * 1024 * 1.33; // 15MB * base64 overhead
