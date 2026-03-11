@@ -36,7 +36,7 @@ export function useImportOrchestrator() {
               updated_at: new Date().toISOString(),
             });
 
-            // 1. Upload to Supabase Storage
+            // 1. Upload to Supabase Storage (Only for audio)
             const { data: { user } } = await supabase.auth.getUser();
             if (!user) {
               console.warn('No user session available, skipping sync.');
@@ -47,46 +47,47 @@ export function useImportOrchestrator() {
             let fileName = '';
             let contentType = '';
             let mimeType = '';
+            let filePath = '';
 
             if (isDocument) {
               fileName = `${Date.now()}-${insight.id}.md`;
               contentType = 'text/markdown';
               mimeType = 'text/markdown';
+              filePath = `${user.id}/${fileName}`;
             } else {
               const blob = insight.raw_content as Blob;
               mimeType = blob.type || 'audio/webm';
               const ext = mimeType.includes('mpeg') || mimeType.includes('mp3') ? 'mp3' : 'webm';
               fileName = `${Date.now()}-${insight.id}.${ext}`;
               contentType = mimeType;
+              filePath = `${user.id}/${fileName}`;
+
+              // Get Signed Upload URL
+              const { data: signedData, error: signedError } = await supabase.storage
+                .from('meetings')
+                .createSignedUploadUrl(filePath);
+              
+              if (signedError) throw signedError;
+
+              // Upload using raw PUT request
+              const uploadBlob = insight.raw_content as Blob;
+              
+              if (uploadBlob.size < 1000) throw new Error("Blob is corrupted or empty before upload");
+
+              const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_DATABASE_URL;
+              const finalUrl = new URL(signedData.signedUrl, supabaseUrl).toString();
+              console.log('Final upload URL:', finalUrl);
+
+              const uploadResponse = await fetch(finalUrl, {
+                method: 'PUT',
+                body: uploadBlob,
+                headers: {
+                  'Content-Type': contentType
+                }
+              });
+
+              if (!uploadResponse.ok) throw new Error('Failed to upload file');
             }
-
-            const filePath = `${user.id}/${fileName}`;
-            
-            // 1. Get Signed Upload URL
-            const { data: signedData, error: signedError } = await supabase.storage
-              .from('meetings')
-              .createSignedUploadUrl(filePath);
-            
-            if (signedError) throw signedError;
-
-            // 2. Upload using raw PUT request
-            const blob = isDocument ? new Blob([insight.raw_content as string], { type: 'text/markdown' }) : (insight.raw_content as Blob);
-            
-            if (blob.size < 1000) throw new Error("Blob is corrupted or empty before upload");
-
-            const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_DATABASE_URL;
-            const finalUrl = new URL(signedData.signedUrl, supabaseUrl).toString();
-            console.log('Final upload URL:', finalUrl);
-
-            const uploadResponse = await fetch(finalUrl, {
-              method: 'PUT',
-              body: blob,
-              headers: {
-                'Content-Type': contentType
-              }
-            });
-
-            if (!uploadResponse.ok) throw new Error('Failed to upload file');
 
             // 2. Insert into Supabase DB
             const { data: dbInsight, error: dbError } = await supabase
@@ -95,7 +96,7 @@ export function useImportOrchestrator() {
                 id: insight.id, // Use the original ID
                 user_id: user.id,
                 processing_status: 'analyzing',
-                audio_url: filePath,
+                audio_url: isDocument ? null : filePath,
                 summary: 'Analyzing...',
               })
               .select()
@@ -114,15 +115,21 @@ export function useImportOrchestrator() {
             router.push(`/dashboard/files/${dbInsight.id}`);
 
             // 4. Call API
+            const apiBody: any = { 
+              insightId: dbInsight.id,
+              mimeType: mimeType,
+              isDeepAnalysisEnabled: false
+            };
+            if (isDocument) {
+              apiBody.textPayload = insight.raw_content;
+            } else {
+              apiBody.audioUrl = filePath;
+            }
+
             const response = await fetch('/api/analyze', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ 
-                insightId: dbInsight.id,
-                audioUrl: filePath,
-                mimeType: mimeType,
-                isDeepAnalysisEnabled: false
-              }),
+              body: JSON.stringify(apiBody),
             });
 
             if (!response.ok) {

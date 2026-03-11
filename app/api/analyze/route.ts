@@ -9,36 +9,40 @@ export async function POST(req: Request) {
     const body = await req.json();
     const data = body;
     insightId = data.insightId;
-    const { audioUrl, mimeType, isDeepAnalysisEnabled } = data;
+    const { audioUrl, textPayload, mimeType, isDeepAnalysisEnabled } = data;
 
     // Validate required fields
-    if (!insightId || !audioUrl) {
+    if (!insightId || (!audioUrl && !textPayload)) {
       return NextResponse.json({ success: false, error: "Missing required fields in payload." }, { status: 400 });
     }
     
-    // 1. Fetch the File Data
-    const { data: fileBlob, error: downloadError } = await supabase.storage
-      .from('meetings')
-      .download(audioUrl);
+    let base64Audio: string | undefined;
+    let textContent: string | undefined;
 
-    if (downloadError) {
-      throw new Error(`Failed to download audio file: ${downloadError.message}`);
+    if (textPayload) {
+      textContent = textPayload;
+      console.log('Using textPayload, skipping Supabase download');
+    } else {
+      // 1. Fetch the File Data
+      const { data: fileBlob, error: downloadError } = await supabase.storage
+        .from('meetings')
+        .download(audioUrl);
+
+      if (downloadError) {
+        throw new Error(`Failed to download audio file: ${downloadError.message}`);
+      }
+
+      // 2. Convert to Base64
+      const arrayBuffer = await (fileBlob as any).arrayBuffer();
+      base64Audio = Buffer.from(arrayBuffer).toString('base64');
+      console.log('File downloaded, size:', base64Audio.length, 'Mime:', mimeType);
     }
-
-    // 2. Convert to Base64
-    let base64Audio: string;
-    // Supabase storage download returns a Blob in the browser, but in Node/Next.js API routes it might be a Buffer or Blob depending on the SDK version.
-    // The safest way is to convert to ArrayBuffer first.
-    const arrayBuffer = await (fileBlob as any).arrayBuffer();
-    base64Audio = Buffer.from(arrayBuffer).toString('base64');
-    
-    console.log('File downloaded, size:', base64Audio.length, 'Mime:', mimeType);
 
     // 3. Determine mimeType
     let yourMimeType = mimeType;
     if (!yourMimeType) {
-      if (audioUrl.endsWith('.mp3')) yourMimeType = 'audio/mp3';
-      else if (audioUrl.endsWith('.md')) yourMimeType = 'text/markdown';
+      if (audioUrl?.endsWith('.mp3')) yourMimeType = 'audio/mp3';
+      else if (audioUrl?.endsWith('.md')) yourMimeType = 'text/markdown';
       else yourMimeType = 'audio/webm';
     }
     console.log('Using MimeType:', yourMimeType);
@@ -46,26 +50,30 @@ export async function POST(req: Request) {
     const ai = new GoogleGenAI({ apiKey: process.env.NEXT_PUBLIC_GEMINI_API_KEY! });
     
     // Determine if audio is > 15 minutes (approx 15MB for compressed audio)
-    const isLongAudio = base64Audio.length > 15 * 1024 * 1024 * 1.33; // 15MB * base64 overhead
+    const isLongAudio = base64Audio && base64Audio.length > 15 * 1024 * 1024 * 1.33; // 15MB * base64 overhead
     const useProModel = isDeepAnalysisEnabled || isLongAudio;
-    const appliedModel = useProModel ? "gemini-3.1-pro-preview" : "gemini-3-flash-preview";
-    console.log('Calling AI model:', appliedModel, 'isDeepAnalysisEnabled:', isDeepAnalysisEnabled, 'isLongAudio:', isLongAudio);
+    const appliedModel = useProModel ? "gemini-3-pro" : "gemini-3-flash";
+    console.log('Calling AI model:', appliedModel, 'isDeepAnalysisEnabled:', isDeepAnalysisEnabled, 'isLongAudio:', !!isLongAudio);
 
     const startTime = Date.now();
+    const prompt = textContent 
+      ? `Analyze this text and provide a structured summary, highlights, action items, topics, and sentiment: ${textContent}`
+      : "Analyze this content and provide a structured summary, highlights, action items, topics, and sentiment.";
+    
+    const parts: any[] = [{ text: prompt }];
+    if (base64Audio) {
+      parts.push({ inlineData: { data: base64Audio, mimeType: yourMimeType } });
+    }
+
     const response = await ai.models.generateContent({
       model: appliedModel,
-      contents: {
-        parts: [
-          { text: "Analyze this content and provide a structured summary, highlights, action items, topics, and sentiment." },
-          { inlineData: { data: base64Audio, mimeType: yourMimeType } }
-        ]
-      },
+      contents: { parts },
       config: {
         responseMimeType: "application/json",
         responseSchema: {
           type: Type.OBJECT,
           properties: {
-            title: { type: Type.STRING, description: "A short, descriptive, contextual title for this meeting or note, max 6 words" },
+            title: { type: Type.STRING, description: "A short, descriptive, contextual title, max 6 words" },
             summary: { type: Type.STRING },
             highlights: { type: Type.ARRAY, items: { type: Type.STRING } },
             action_items: { type: Type.ARRAY, items: { type: Type.STRING } },
@@ -75,7 +83,7 @@ export async function POST(req: Request) {
           },
           required: ["title", "summary", "highlights", "action_items", "topics", "sentiment", "reading_time"],
         },
-        systemInstruction: "You are a top-tier analyst. Provide dense, high-signal analysis."
+        systemInstruction: "Analyze content. Provide dense, high-signal analysis."
       }
     });
     const duration = ((Date.now() - startTime) / 1000).toFixed(1);
