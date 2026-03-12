@@ -105,6 +105,14 @@ export function AudioPlayer({ audioPath }: AudioPlayerProps) {
     }
   };
 
+  const handleSeek = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newProgress = Number(e.target.value);
+    if (audioRef.current && audioRef.current.duration) {
+      audioRef.current.currentTime = (newProgress / 100) * audioRef.current.duration;
+    }
+    setProgress(newProgress);
+  };
+
   return (
     <div className="bg-foreground/5 border border-foreground/10 p-4 rounded-2xl flex items-center gap-4">
       {signedUrl && (
@@ -134,9 +142,16 @@ export function AudioPlayer({ audioPath }: AudioPlayerProps) {
         )}
       </button>
 
-      <div className="flex-1 h-1 bg-foreground/10 rounded-full overflow-hidden">
-        <div className="h-full bg-primary transition-all duration-100" style={{ width: `${progress}%` }} />
-      </div>
+      <input
+        type="range"
+        min="0"
+        max="100"
+        step="0.1"
+        value={progress || 0}
+        onChange={handleSeek}
+        disabled={!signedUrl || isLoading}
+        className="flex-1 h-2 bg-foreground/10 rounded-full cursor-pointer accent-primary disabled:opacity-50 disabled:cursor-not-allowed"
+      />
 
       <button onClick={toggleSpeed} className="px-3 py-1.5 rounded-lg bg-background border border-foreground/10 text-xs font-mono hover:bg-foreground/5 transition-colors">
         {playbackRate}x
