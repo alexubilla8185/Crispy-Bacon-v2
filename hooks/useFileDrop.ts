@@ -71,16 +71,18 @@ export function useFileDrop() {
 
         await saveInsight(newInsight);
         
-        // Update cache for optimistic UI
-        queryClient.setQueryData(['localInsight', id], newInsight);
-        queryClient.setQueryData(['insight', id], newInsight);
-        queryClient.setQueriesData({ queryKey: ['insights'] }, (oldList: any[] | undefined) => {
-          if (!oldList) return [newInsight];
-          return [newInsight, ...oldList];
-        });
-        queryClient.setQueriesData({ queryKey: ['localInsights'] }, (oldList: any[] | undefined) => {
-          if (!oldList) return [newInsight];
-          return [newInsight, ...oldList];
+        unstable_batchedUpdates(() => {
+          // Update cache for optimistic UI
+          queryClient.setQueryData(['localInsight', id], newInsight);
+          queryClient.setQueryData(['insight', id], newInsight);
+          queryClient.setQueriesData({ queryKey: ['insights'] }, (oldList: any[] | undefined) => {
+            if (!oldList) return [newInsight];
+            return [newInsight, ...oldList];
+          });
+          queryClient.setQueriesData({ queryKey: ['localInsights'] }, (oldList: any[] | undefined) => {
+            if (!oldList) return [newInsight];
+            return [newInsight, ...oldList];
+          });
         });
 
         console.log('Successfully saved insight locally:', newInsight.id);
@@ -160,15 +162,17 @@ export function useFileDrop() {
             await saveInsight(analyzingInsight);
             
             // Update cache for analyzing state
-            queryClient.setQueryData(['localInsight', id], analyzingInsight);
-            queryClient.setQueryData(['insight', id], analyzingInsight);
-            queryClient.setQueriesData({ queryKey: ['insights'] }, (oldList: any[] | undefined) => {
-              if (!oldList) return oldList;
-              return oldList.map(item => item.id === id ? { ...item, processing_status: 'analyzing' } : item);
-            });
-            queryClient.setQueriesData({ queryKey: ['localInsights'] }, (oldList: any[] | undefined) => {
-              if (!oldList) return oldList;
-              return oldList.map(item => item.id === id ? { ...item, processing_status: 'analyzing' } : item);
+            unstable_batchedUpdates(() => {
+              queryClient.setQueryData(['localInsight', id], analyzingInsight);
+              queryClient.setQueryData(['insight', id], analyzingInsight);
+              queryClient.setQueriesData({ queryKey: ['insights'] }, (oldList: any[] | undefined) => {
+                if (!oldList) return oldList;
+                return oldList.map(item => item.id === id ? { ...item, processing_status: 'analyzing' } : item);
+              });
+              queryClient.setQueriesData({ queryKey: ['localInsights'] }, (oldList: any[] | undefined) => {
+                if (!oldList) return oldList;
+                return oldList.map(item => item.id === id ? { ...item, processing_status: 'analyzing' } : item);
+              });
             });
 
             // Call API

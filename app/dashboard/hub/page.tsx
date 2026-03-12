@@ -44,7 +44,7 @@ export default function HubPage() {
   };
 
   return (
-    <div className="flex-1 flex flex-col p-6 md:p-12 max-w-5xl mx-auto w-full gap-8 pb-12 overflow-y-auto">
+    <div className="flex-1 flex flex-col p-6 md:p-12 max-w-5xl mx-auto w-full gap-8 pb-12">
       <header>
         <h1 className="text-3xl md:text-4xl font-serif font-medium tracking-tight mb-2">
           Intelligence Hub
@@ -142,9 +142,9 @@ export default function HubPage() {
           </div>
         ) : (
           <div className="flex flex-col">
-            {allActionItems.map((item, index) => (
+            {allActionItems.map((item) => (
               <div 
-                key={`${item.insightId}-${index}`} 
+                key={`${item.insightId}-${item.task}`} 
                 className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-foreground/5 py-4 hover:bg-foreground/5 px-2 -mx-2 rounded-lg transition-colors"
               >
                 <p className="text-sm font-sans text-foreground/90 leading-relaxed flex-1">

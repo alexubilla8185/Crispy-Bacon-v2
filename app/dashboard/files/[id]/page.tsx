@@ -70,7 +70,7 @@ export default function InsightDetailPage({ params }: { params: Promise<{ id: st
   const baseInsight = (finalStatus === localInsight?.processing_status) ? localInsight : (supabaseInsight || localInsight);
   const fallbackInsight = (finalStatus === localInsight?.processing_status) ? supabaseInsight : localInsight;
 
-  const insight = localInsight ? {
+  const insight = (localInsight || supabaseInsight) ? {
     ...fallbackInsight,
     ...baseInsight,
     title: baseInsight?.title || fallbackInsight?.title || 'Untitled Insight',
@@ -79,7 +79,7 @@ export default function InsightDetailPage({ params }: { params: Promise<{ id: st
     summary: baseInsight?.summary || fallbackInsight?.summary,
   } as Insight : null;
 
-  const isLoading = isLocalLoading || (isSupabaseLoading && !supabaseInsight);
+  const isLoading = (!localInsight && !supabaseInsight) && (isLocalLoading || isSupabaseLoading);
 
   const isTimedOut = insight?.processing_status === 'analyzing' && 
     insight?.updated_at && 
@@ -276,8 +276,8 @@ export default function InsightDetailPage({ params }: { params: Promise<{ id: st
             
             {topics && Array.isArray(topics) && topics.length > 0 && (
               <div className="flex flex-wrap gap-2">
-                {topics.map((topic: string, i: number) => (
-                  <span key={i} className="bg-primary/10 text-primary uppercase text-xs px-3 py-1 rounded-full font-medium tracking-wider">
+                {topics.map((topic: string) => (
+                  <span key={topic} className="bg-primary/10 text-primary uppercase text-xs px-3 py-1 rounded-full font-medium tracking-wider">
                     {topic}
                   </span>
                 ))}
@@ -345,8 +345,8 @@ export default function InsightDetailPage({ params }: { params: Promise<{ id: st
                 <div>
                   <h3 className="text-xs font-mono text-foreground/50 uppercase tracking-wider mb-3">Highlights</h3>
                   <ul className="list-disc list-inside space-y-2 text-foreground/80">
-                    {highlights.map((highlight: string, i: number) => (
-                      <li key={i} className="leading-relaxed">{highlight}</li>
+                    {highlights.map((highlight: string) => (
+                      <li key={highlight} className="leading-relaxed">{highlight}</li>
                     ))}
                   </ul>
                 </div>
@@ -356,8 +356,8 @@ export default function InsightDetailPage({ params }: { params: Promise<{ id: st
                 <div>
                   <h3 className="text-xs font-mono text-foreground/50 uppercase tracking-wider mb-3">Action Items</h3>
                   <ul className="space-y-3">
-                    {actionItems.map((item: string, i: number) => (
-                      <li key={i} className="flex items-start gap-3 text-foreground/80">
+                    {actionItems.map((item: string) => (
+                      <li key={item} className="flex items-start gap-3 text-foreground/80">
                         <input type="checkbox" disabled className="mt-1.5 rounded border-foreground/20 text-primary focus:ring-primary" />
                         <span className="leading-relaxed">{item}</span>
                       </li>
