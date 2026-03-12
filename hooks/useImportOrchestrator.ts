@@ -21,7 +21,14 @@ export function useImportOrchestrator() {
         isSyncing.current = true;
         
         const allInsights = await getAllLocalInsights();
-        const pendingInsights = allInsights.filter(i => i.processing_status === 'local');
+        const pendingInsights = allInsights.filter(i => {
+          if (i.processing_status === 'local') return true;
+          if (i.processing_status === 'uploading' || i.processing_status === 'analyzing') {
+            const twoMinutesAgo = new Date(Date.now() - 2 * 60 * 1000).toISOString();
+            return i.updated_at < twoMinutesAgo;
+          }
+          return false;
+        });
         
         if (pendingInsights.length === 0) {
           isSyncing.current = false;
@@ -32,6 +39,12 @@ export function useImportOrchestrator() {
 
         for (const insight of pendingInsights) {
           try {
+            const currentCache: any = queryClient.getQueryData(['localInsight', insight.id]) || queryClient.getQueryData(['insight', insight.id]);
+            if (currentCache?.processing_status === 'completed') {
+                console.log(`[Sync Worker] Aborting status downgrade. Item ${insight.id} is already completed in cache.`);
+                continue; // DO NOT update React Query or IndexedDB. Let the completed state live.
+            }
+
             // 0. Mark as uploading
             const currentInsight = await getInsight(insight.id);
             if (currentInsight && shouldUpdateStatus(currentInsight.processing_status, 'uploading')) {
@@ -95,6 +108,12 @@ export function useImportOrchestrator() {
               if (!uploadResponse.ok) throw new Error('Failed to upload file');
             }
 
+            const checkCacheBeforeDb: any = queryClient.getQueryData(['localInsight', insight.id]) || queryClient.getQueryData(['insight', insight.id]);
+            if (checkCacheBeforeDb?.processing_status === 'completed') {
+                console.log(`[Sync Worker] Aborting status downgrade before DB insert. Item ${insight.id} is already completed in cache.`);
+                continue;
+            }
+
             // 2. Insert into Supabase DB
             const { data: dbInsight, error: dbError } = await supabase
               .from('insights')
@@ -123,7 +142,7 @@ export function useImportOrchestrator() {
             // 3. Navigate immediately
             router.push(`/dashboard/files/${dbInsight.id}`);
 
-            // 4. Call API
+            // 4. Call API (Non-blocking)
             const apiBody: any = { 
               insightId: dbInsight.id,
               mimeType: mimeType,
@@ -135,42 +154,70 @@ export function useImportOrchestrator() {
               apiBody.audioUrl = filePath;
             }
 
-            const response = await fetch('/api/analyze', {
+            fetch('/api/analyze', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify(apiBody),
-            });
+            }).then(async (response) => {
+              if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error || 'Analysis failed');
+              }
 
-            if (!response.ok) {
-              const errorData = await response.json();
-              throw new Error(errorData.error || 'Analysis failed');
-            }
+              const { intelligence } = await response.json();
 
-            const { intelligence } = await response.json();
-
-            // 5. Update Cache
-            queryClient.setQueryData(['insight', dbInsight.id], (oldData: any) => ({
-              ...oldData,
-              processing_status: 'completed',
-              title: intelligence.title || oldData?.title,
-              intelligence: intelligence
-            }));
-            queryClient.setQueriesData({ queryKey: ['insights'] }, (oldList: any[] | undefined) => {
-              if (!oldList) return oldList;
-              return oldList.map(item => item.id === dbInsight.id ? { ...item, processing_status: 'completed', title: intelligence.title } : item);
-            });
-
-            // 5. Mark as completed in local DB immediately
-            const localInsight = await getInsight(insight.id);
-            if (localInsight) {
-              await saveInsight({
-                ...localInsight,
+              // 5. Update Cache
+              queryClient.setQueryData(['insight', dbInsight.id], (oldData: any) => ({
+                ...oldData,
                 processing_status: 'completed',
-                intelligence: intelligence,
-                title: intelligence.title,
+                title: intelligence.title || oldData?.title,
+                intelligence: intelligence
+              }));
+              
+              queryClient.setQueryData(['localInsight', dbInsight.id], (oldData: any) => ({
+                ...oldData,
+                processing_status: 'completed',
+                title: intelligence.title || oldData?.title,
+                intelligence: intelligence
+              }));
+              
+              queryClient.setQueryData(['supabaseInsight', dbInsight.id], (oldData: any) => ({
+                ...oldData,
+                processing_status: 'completed',
+                title: intelligence.title || oldData?.title,
+                intelligence: intelligence
+              }));
+
+              queryClient.setQueriesData({ queryKey: ['insights'] }, (oldList: any[] | undefined) => {
+                if (!oldList) return oldList;
+                return oldList.map(item => item.id === dbInsight.id ? { ...item, processing_status: 'completed', title: intelligence.title } : item);
+              });
+              
+              queryClient.setQueriesData({ queryKey: ['localInsights'] }, (oldList: any[] | undefined) => {
+                if (!oldList) return oldList;
+                return oldList.map(item => item.id === dbInsight.id ? { ...item, processing_status: 'completed', title: intelligence.title } : item);
+              });
+
+              // 5. Mark as completed in local DB immediately
+              const localInsight = await getInsight(insight.id);
+              if (localInsight) {
+                await saveInsight({
+                  ...localInsight,
+                  processing_status: 'completed',
+                  intelligence: intelligence,
+                  title: intelligence.title,
+                  updated_at: new Date().toISOString(),
+                });
+              }
+            }).catch(async (error) => {
+              console.error(`Failed to analyze insight ${insight.id}:`, error);
+              showToast(`Analysis failed for ${insight.title}: ${error instanceof Error ? error.message : 'Unknown error'}`, 'error');
+              await saveInsight({
+                ...insight,
+                processing_status: 'failed',
                 updated_at: new Date().toISOString(),
               });
-            }
+            });
 
           } catch (error) {
             console.error(`Failed to import insight ${insight.id}:`, error);
@@ -195,5 +242,5 @@ export function useImportOrchestrator() {
     syncPendingInsights();
 
     return () => clearInterval(intervalId);
-  }, [showToast, router, supabase]);
+  }, [showToast, router, supabase, queryClient]);
 }

@@ -103,7 +103,34 @@ export default function InsightDetailPage({ params }: { params: Promise<{ id: st
       if (!response.ok) {
         throw new Error('Retry failed');
       }
-      showToast('Analysis restarted', 'success');
+      
+      const { intelligence } = await response.json();
+      
+      queryClient.setQueryData(['localInsight', insight.id], (oldData: any) => ({
+        ...oldData,
+        processing_status: 'completed',
+        title: intelligence.title || oldData?.title,
+        intelligence: intelligence
+      }));
+      
+      queryClient.setQueryData(['supabaseInsight', insight.id], (oldData: any) => ({
+        ...oldData,
+        processing_status: 'completed',
+        title: intelligence.title || oldData?.title,
+        intelligence: intelligence
+      }));
+      
+      queryClient.setQueriesData({ queryKey: ['insights'] }, (oldList: any[] | undefined) => {
+        if (!oldList) return oldList;
+        return oldList.map(item => item.id === insight.id ? { ...item, processing_status: 'completed', title: intelligence.title } : item);
+      });
+      
+      queryClient.setQueriesData({ queryKey: ['localInsights'] }, (oldList: any[] | undefined) => {
+        if (!oldList) return oldList;
+        return oldList.map(item => item.id === insight.id ? { ...item, processing_status: 'completed', title: intelligence.title } : item);
+      });
+
+      showToast('Analysis restarted and completed', 'success');
     } catch (error) {
       console.error('Retry error:', error);
       showToast('Failed to restart analysis', 'error');

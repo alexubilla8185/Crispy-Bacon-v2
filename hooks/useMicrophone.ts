@@ -2,6 +2,9 @@ import { useState, useRef, useCallback, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { saveInsight } from '@/lib/storage/localDbService';
 import type { Insight } from '@/lib/schemas';
+import { useQueryClient } from '@tanstack/react-query';
+import { createClient } from '@/lib/supabase/client';
+import { useUIStore } from '@/lib/store';
 
 function encodeWAV(samples: Float32Array, sampleRate: number): Blob {
   const buffer = new ArrayBuffer(44 + samples.length * 2);
@@ -40,6 +43,9 @@ export function useMicrophone() {
   const [isRecording, setIsRecording] = useState(false);
   const [recordingTime, setRecordingTime] = useState(0);
   const router = useRouter();
+  const queryClient = useQueryClient();
+  const supabase = createClient();
+  const { showToast } = useUIStore();
 
   const audioContextRef = useRef<AudioContext | null>(null);
   const mediaStreamRef = useRef<MediaStream | null>(null);
@@ -157,22 +163,171 @@ export function useMicrophone() {
       id,
       title: `Voice Note - ${new Date().toLocaleString()}`,
       raw_content: wavBlob,
-      processing_status: 'local',
+      processing_status: 'uploading',
       created_at: now,
       updated_at: now,
     };
 
     try {
       await saveInsight(newInsight);
+      
+      // Update cache for optimistic UI
+      queryClient.setQueryData(['localInsight', id], newInsight);
+      queryClient.setQueryData(['insight', id], newInsight);
+      queryClient.setQueriesData({ queryKey: ['insights'] }, (oldList: any[] | undefined) => {
+        if (!oldList) return [newInsight];
+        return [newInsight, ...oldList];
+      });
+      queryClient.setQueriesData({ queryKey: ['localInsights'] }, (oldList: any[] | undefined) => {
+        if (!oldList) return [newInsight];
+        return [newInsight, ...oldList];
+      });
+
       console.log('Successfully saved voice note locally:', id);
       router.push(`/dashboard/files/${id}`);
+
+      // --- FOREGROUND PIPELINE ---
+      (async () => {
+        try {
+          const { data: { user } } = await supabase.auth.getUser();
+          if (!user) throw new Error('No user session available');
+
+          const mimeType = 'audio/wav';
+          const fileName = `${Date.now()}-${id}.wav`;
+          const filePath = `${user.id}/${fileName}`;
+
+          // Get Signed Upload URL
+          const { data: signedData, error: signedError } = await supabase.storage
+            .from('meetings')
+            .createSignedUploadUrl(filePath);
+          
+          if (signedError) throw signedError;
+
+          // Upload using raw PUT request
+          if (wavBlob.size < 1000) throw new Error("Blob is corrupted or empty before upload");
+
+          const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_DATABASE_URL;
+          const finalUrl = new URL(signedData.signedUrl, supabaseUrl!).toString();
+
+          const uploadResponse = await fetch(finalUrl, {
+            method: 'PUT',
+            body: wavBlob,
+            headers: { 'Content-Type': mimeType }
+          });
+
+          if (!uploadResponse.ok) throw new Error('Failed to upload file');
+
+          // Insert into Supabase DB
+          const { data: dbInsight, error: dbError } = await supabase
+            .from('insights')
+            .insert({
+              id: id,
+              user_id: user.id,
+              processing_status: 'analyzing',
+              audio_url: filePath,
+              summary: 'Analyzing...',
+            })
+            .select()
+            .single();
+
+          if (dbError) throw dbError;
+
+          // Mark as analyzing locally
+          const analyzingInsight = {
+            ...newInsight,
+            processing_status: 'analyzing' as const,
+            updated_at: new Date().toISOString(),
+          };
+          await saveInsight(analyzingInsight);
+          
+          // Update cache for analyzing state
+          queryClient.setQueryData(['localInsight', id], analyzingInsight);
+          queryClient.setQueryData(['insight', id], analyzingInsight);
+          queryClient.setQueriesData({ queryKey: ['insights'] }, (oldList: any[] | undefined) => {
+            if (!oldList) return oldList;
+            return oldList.map(item => item.id === id ? { ...item, processing_status: 'analyzing' } : item);
+          });
+          queryClient.setQueriesData({ queryKey: ['localInsights'] }, (oldList: any[] | undefined) => {
+            if (!oldList) return oldList;
+            return oldList.map(item => item.id === id ? { ...item, processing_status: 'analyzing' } : item);
+          });
+
+          // Call API
+          const apiBody: any = { 
+            insightId: dbInsight.id,
+            mimeType: mimeType,
+            isDeepAnalysisEnabled: false,
+            audioUrl: filePath
+          };
+
+          const response = await fetch('/api/analyze', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(apiBody),
+          });
+
+          if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error || 'Analysis failed');
+          }
+
+          const { intelligence } = await response.json();
+
+          // Update Cache
+          queryClient.setQueryData(['insight', id], (oldData: any) => ({
+            ...oldData,
+            processing_status: 'completed',
+            title: intelligence.title || oldData?.title,
+            intelligence: intelligence
+          }));
+          
+          queryClient.setQueryData(['localInsight', id], (oldData: any) => ({
+            ...oldData,
+            processing_status: 'completed',
+            title: intelligence.title || oldData?.title,
+            intelligence: intelligence
+          }));
+          
+          queryClient.setQueryData(['supabaseInsight', id], (oldData: any) => ({
+            ...oldData,
+            processing_status: 'completed',
+            title: intelligence.title || oldData?.title,
+            intelligence: intelligence
+          }));
+
+          queryClient.setQueriesData({ queryKey: ['insights'] }, (oldList: any[] | undefined) => {
+            if (!oldList) return oldList;
+            return oldList.map(item => item.id === id ? { ...item, processing_status: 'completed', title: intelligence.title } : item);
+          });
+          
+          queryClient.setQueriesData({ queryKey: ['localInsights'] }, (oldList: any[] | undefined) => {
+            if (!oldList) return oldList;
+            return oldList.map(item => item.id === id ? { ...item, processing_status: 'completed', title: intelligence.title } : item);
+          });
+
+          // Mark as completed in local DB
+          await saveInsight({
+            ...newInsight,
+            processing_status: 'completed',
+            intelligence: intelligence,
+            title: intelligence.title,
+            updated_at: new Date().toISOString(),
+          });
+
+        } catch (error) {
+          console.error(`Foreground processing failed for voice note ${id}:`, error);
+          // Fallback to local status so the background worker can pick it up if needed
+        }
+      })();
+
     } catch (error) {
       console.error('Failed to save voice note:', error);
+      showToast('Failed to save voice note', 'error');
     }
 
     audioChunksRef.current = [];
     setRecordingTime(0);
-  }, [cleanup, router]);
+  }, [cleanup, router, queryClient, supabase, showToast]);
 
   useEffect(() => {
     return () => {

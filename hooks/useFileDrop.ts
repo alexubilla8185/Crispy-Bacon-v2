@@ -2,15 +2,18 @@ import { useState, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { saveInsight } from '@/lib/storage/localDbService';
 import { parseFile } from '@/lib/utils/fileParser';
-import { uploadAudio } from '@/lib/utils/audioUploader';
 import { useUIStore } from '@/lib/store';
 import type { Insight } from '@/lib/schemas';
+import { useQueryClient } from '@tanstack/react-query';
+import { createClient } from '@/lib/supabase/client';
 
 export function useFileDrop() {
   const [isDragging, setIsDragging] = useState(false);
   const dragCounter = useRef(0);
   const router = useRouter();
   const { showToast } = useUIStore();
+  const queryClient = useQueryClient();
+  const supabase = createClient();
 
   const onDragEnter = useCallback((e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
@@ -60,16 +63,186 @@ export function useFileDrop() {
           id,
           title: file.name,
           raw_content: rawContent,
-          processing_status: 'local',
+          processing_status: 'uploading',
           created_at: now,
           updated_at: now,
         };
 
         await saveInsight(newInsight);
+        
+        // Update cache for optimistic UI
+        queryClient.setQueryData(['localInsight', id], newInsight);
+        queryClient.setQueryData(['insight', id], newInsight);
+        queryClient.setQueriesData({ queryKey: ['insights'] }, (oldList: any[] | undefined) => {
+          if (!oldList) return [newInsight];
+          return [newInsight, ...oldList];
+        });
+        queryClient.setQueriesData({ queryKey: ['localInsights'] }, (oldList: any[] | undefined) => {
+          if (!oldList) return [newInsight];
+          return [newInsight, ...oldList];
+        });
+
         console.log('Successfully saved insight locally:', newInsight.id);
         
         // Optimistic routing: navigate immediately
         router.push(`/dashboard/files/${newInsight.id}`);
+        
+        // --- FOREGROUND PIPELINE ---
+        (async () => {
+          try {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) throw new Error('No user session available');
+
+            const isDocument = typeof rawContent === 'string';
+            let fileName = '';
+            let contentType = '';
+            let mimeType = '';
+            let filePath = '';
+
+            if (isDocument) {
+              fileName = `${Date.now()}-${id}.md`;
+              contentType = 'text/markdown';
+              mimeType = 'text/markdown';
+              filePath = `${user.id}/${fileName}`;
+            } else {
+              const blob = rawContent as Blob;
+              mimeType = blob.type || 'audio/webm';
+              const ext = mimeType.includes('mpeg') || mimeType.includes('mp3') ? 'mp3' : 'webm';
+              fileName = `${Date.now()}-${id}.${ext}`;
+              contentType = mimeType;
+              filePath = `${user.id}/${fileName}`;
+
+              // Get Signed Upload URL
+              const { data: signedData, error: signedError } = await supabase.storage
+                .from('meetings')
+                .createSignedUploadUrl(filePath);
+              
+              if (signedError) throw signedError;
+
+              // Upload using raw PUT request
+              const uploadBlob = rawContent as Blob;
+              if (uploadBlob.size < 1000) throw new Error("Blob is corrupted or empty before upload");
+
+              const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_DATABASE_URL;
+              const finalUrl = new URL(signedData.signedUrl, supabaseUrl!).toString();
+
+              const uploadResponse = await fetch(finalUrl, {
+                method: 'PUT',
+                body: uploadBlob,
+                headers: { 'Content-Type': contentType }
+              });
+
+              if (!uploadResponse.ok) throw new Error('Failed to upload file');
+            }
+
+            // Insert into Supabase DB
+            const { data: dbInsight, error: dbError } = await supabase
+              .from('insights')
+              .insert({
+                id: id,
+                user_id: user.id,
+                processing_status: 'analyzing',
+                audio_url: isDocument ? null : filePath,
+                summary: 'Analyzing...',
+              })
+              .select()
+              .single();
+
+            if (dbError) throw dbError;
+
+            // Mark as analyzing locally
+            const analyzingInsight = {
+              ...newInsight,
+              processing_status: 'analyzing' as const,
+              updated_at: new Date().toISOString(),
+            };
+            await saveInsight(analyzingInsight);
+            
+            // Update cache for analyzing state
+            queryClient.setQueryData(['localInsight', id], analyzingInsight);
+            queryClient.setQueryData(['insight', id], analyzingInsight);
+            queryClient.setQueriesData({ queryKey: ['insights'] }, (oldList: any[] | undefined) => {
+              if (!oldList) return oldList;
+              return oldList.map(item => item.id === id ? { ...item, processing_status: 'analyzing' } : item);
+            });
+            queryClient.setQueriesData({ queryKey: ['localInsights'] }, (oldList: any[] | undefined) => {
+              if (!oldList) return oldList;
+              return oldList.map(item => item.id === id ? { ...item, processing_status: 'analyzing' } : item);
+            });
+
+            // Call API
+            const apiBody: any = { 
+              insightId: dbInsight.id,
+              mimeType: mimeType,
+              isDeepAnalysisEnabled: false
+            };
+            if (isDocument) {
+              apiBody.textPayload = rawContent;
+            } else {
+              apiBody.audioUrl = filePath;
+            }
+
+            const response = await fetch('/api/analyze', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(apiBody),
+            });
+
+            if (!response.ok) {
+              const errorData = await response.json();
+              throw new Error(errorData.error || 'Analysis failed');
+            }
+
+            const { intelligence } = await response.json();
+
+            // Update Cache
+            queryClient.setQueryData(['insight', id], (oldData: any) => ({
+              ...oldData,
+              processing_status: 'completed',
+              title: intelligence.title || oldData?.title,
+              intelligence: intelligence
+            }));
+            
+            queryClient.setQueryData(['localInsight', id], (oldData: any) => ({
+              ...oldData,
+              processing_status: 'completed',
+              title: intelligence.title || oldData?.title,
+              intelligence: intelligence
+            }));
+            
+            queryClient.setQueryData(['supabaseInsight', id], (oldData: any) => ({
+              ...oldData,
+              processing_status: 'completed',
+              title: intelligence.title || oldData?.title,
+              intelligence: intelligence
+            }));
+
+            queryClient.setQueriesData({ queryKey: ['insights'] }, (oldList: any[] | undefined) => {
+              if (!oldList) return oldList;
+              return oldList.map(item => item.id === id ? { ...item, processing_status: 'completed', title: intelligence.title } : item);
+            });
+            
+            queryClient.setQueriesData({ queryKey: ['localInsights'] }, (oldList: any[] | undefined) => {
+              if (!oldList) return oldList;
+              return oldList.map(item => item.id === id ? { ...item, processing_status: 'completed', title: intelligence.title } : item);
+            });
+
+            // Mark as completed in local DB
+            await saveInsight({
+              ...newInsight,
+              processing_status: 'completed',
+              intelligence: intelligence,
+              title: intelligence.title,
+              updated_at: new Date().toISOString(),
+            });
+
+          } catch (error) {
+            console.error(`Foreground processing failed for ${id}:`, error);
+            // Fallback to local status so the background worker can pick it up if needed
+            // Or mark as failed if it's a hard error
+            // We leave it as 'uploading' or 'analyzing' and let the background worker retry if it's stuck
+          }
+        })();
         
       } catch (error) {
         console.error('Error processing dropped file:', error);
@@ -78,7 +251,7 @@ export function useFileDrop() {
     }
     
     showToast('Importing documents...', 'info');
-  }, [router, showToast]);
+  }, [router, showToast, queryClient, supabase]);
 
   const onDrop = useCallback(async (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
