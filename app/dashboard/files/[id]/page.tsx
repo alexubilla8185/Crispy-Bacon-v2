@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { getInsight, deleteInsight } from '@/lib/storage/localDbService';
 import { Insight } from '@/lib/schemas';
-import { ArrowLeft, FileText, Mic, MessageSquare, Trash, ChevronDown } from 'lucide-react';
+import { ArrowLeft, FileText, Mic, MessageSquare, Trash, ChevronDown, Sparkles, CheckCircle2 } from 'lucide-react';
 import { TactileButton } from '@/components/ui/TactileButton';
 import { ChatDrawer } from '@/components/ui/ChatDrawer';
 import { useUIStore } from '@/lib/store';
@@ -247,11 +247,6 @@ export default function InsightDetailPage({ params }: { params: Promise<{ id: st
       </div>
 
       <header className="mb-12">
-        {insight.processing_status === 'completed' && dbInsight.audio_url && isAudioFile && (
-          <div className="mb-8">
-            <AudioPlayer audioPath={dbInsight.audio_url} />
-          </div>
-        )}
         <div className="flex items-center gap-3 mb-4">
           <div className="w-10 h-10 rounded-full bg-primary/5 border border-black/10 dark:border-white/10 flex items-center justify-center">
             {isAudio ? <Mic className="w-5 h-5 text-primary" /> : <FileText className="w-5 h-5 text-primary" />}
@@ -261,28 +256,34 @@ export default function InsightDetailPage({ params }: { params: Promise<{ id: st
           </span>
         </div>
         <div className="flex min-w-0 flex-1">
-          <h1 className="text-3xl md:text-5xl font-serif font-medium tracking-tight leading-tight mb-4 break-words">
+          <h1 className="text-3xl font-serif tracking-tight leading-tight mb-4 break-words">
             {insight.title}
           </h1>
         </div>
         
-        {(sentiment || readingTime || (topics && topics.length > 0)) && (
-          <div className="flex flex-col gap-4">
+        {(sentiment || readingTime) && (
+          <div className="flex flex-col gap-4 mb-6">
             <div className="font-mono text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider">
               {sentiment && <span>{sentiment}</span>}
               {sentiment && readingTime && <span> · </span>}
               {readingTime && <span>{readingTime}</span>}
             </div>
-            
-            {topics && Array.isArray(topics) && topics.length > 0 && (
-              <div className="flex flex-wrap gap-2">
-                {topics.map((topic: string) => (
-                  <span key={topic} className="bg-primary/10 text-primary uppercase text-xs px-3 py-1 rounded-full font-medium tracking-wider">
-                    {topic}
-                  </span>
-                ))}
-              </div>
-            )}
+          </div>
+        )}
+
+        {topics && Array.isArray(topics) && topics.length > 0 && (
+          <div className="flex flex-wrap gap-2 mb-8">
+            {topics.map((topic: string) => (
+              <span key={topic} className="px-4 py-1.5 rounded-full text-sm font-medium bg-black/5 dark:bg-white/5 border border-black/5 dark:border-white/5 hover:bg-black/10 dark:hover:bg-white/10 transition-colors cursor-default">
+                {topic}
+              </span>
+            ))}
+          </div>
+        )}
+
+        {insight.processing_status === 'completed' && dbInsight.audio_url && isAudioFile && (
+          <div className="bg-surface rounded-2xl p-2 shadow-sm mb-8">
+            <AudioPlayer audioPath={dbInsight.audio_url} />
           </div>
         )}
       </header>
@@ -290,7 +291,6 @@ export default function InsightDetailPage({ params }: { params: Promise<{ id: st
       <div className="space-y-12">
         {/* Summary Section */}
         <section>
-          <h2 className="text-xs font-mono text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-4">AI Summary</h2>
           {insight.processing_status === 'uploading' || insight.processing_status === 'analyzing' ? (
             <div className="p-6 md:p-8 rounded-[32px] bg-primary/5 border border-black/10 dark:border-white/10 space-y-8">
               <div className="space-y-3">
@@ -336,17 +336,25 @@ export default function InsightDetailPage({ params }: { params: Promise<{ id: st
               </button>
             </div>
           ) : (
-            <div className="p-6 md:p-8 rounded-[32px] bg-primary/5 border border-black/10 dark:border-white/10 space-y-8">
-              <p className="font-serif text-lg md:text-xl leading-relaxed text-foreground">
-                {summary || 'No summary available.'}
-              </p>
+            <div className="space-y-10">
+              <div className="bg-blue-50/50 dark:bg-blue-900/10 rounded-3xl p-6 md:p-8">
+                <div className="flex items-center gap-2 mb-4">
+                  <Sparkles className="w-5 h-5 text-blue-500" />
+                  <h2 className="text-sm font-semibold uppercase tracking-wider bg-clip-text text-transparent bg-gradient-to-r from-blue-500 to-purple-500">
+                    Executive Summary
+                  </h2>
+                </div>
+                <p className="leading-relaxed text-lg text-foreground/90">
+                  {summary || 'No summary available.'}
+                </p>
+              </div>
               
               {highlights && Array.isArray(highlights) && highlights.length > 0 && (
                 <div>
-                  <h3 className="text-xs font-mono text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3">Highlights</h3>
-                  <ul className="list-disc list-inside space-y-2 text-foreground">
+                  <h3 className="text-xs font-mono text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-4">Highlights</h3>
+                  <ul className="list-disc list-outside ml-5 space-y-4 text-foreground/80">
                     {highlights.map((highlight: string) => (
-                      <li key={highlight} className="leading-relaxed">{highlight}</li>
+                      <li key={highlight} className="leading-relaxed pl-1">{highlight}</li>
                     ))}
                   </ul>
                 </div>
@@ -354,11 +362,11 @@ export default function InsightDetailPage({ params }: { params: Promise<{ id: st
               
               {actionItems && Array.isArray(actionItems) && actionItems.length > 0 && (
                 <div>
-                  <h3 className="text-xs font-mono text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3">Action Items</h3>
-                  <ul className="space-y-3">
+                  <h3 className="text-xs font-mono text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-4">Action Items</h3>
+                  <ul className="space-y-4 text-foreground/80">
                     {actionItems.map((item: string) => (
-                      <li key={item} className="flex items-start gap-3 text-foreground">
-                        <input type="checkbox" disabled className="mt-1.5 rounded border-black/20 dark:border-white/20 text-primary focus:ring-primary" />
+                      <li key={item} className="flex items-start gap-3">
+                        <CheckCircle2 className="w-5 h-5 text-primary shrink-0 mt-0.5" />
                         <span className="leading-relaxed">{item}</span>
                       </li>
                     ))}
