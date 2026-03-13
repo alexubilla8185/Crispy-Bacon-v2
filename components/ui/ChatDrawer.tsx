@@ -73,7 +73,7 @@ export function ChatDrawer({ isOpen, onClose, documentContext }: ChatDrawerProps
                 className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
               >
                 <div 
-                  className={`max-w-[85%] rounded-2xl px-4 py-3 ${
+                  className={`max-w-[85%] rounded-[24px] px-4 py-3 ${
                     msg.role === 'user' 
                       ? 'bg-primary/10 text-primary rounded-tr-sm' 
                       : 'bg-foreground/5 text-foreground font-serif rounded-tl-sm'
@@ -86,7 +86,7 @@ export function ChatDrawer({ isOpen, onClose, documentContext }: ChatDrawerProps
           )}
           {isLoading && (
             <div className="flex justify-start">
-              <div className="max-w-[85%] rounded-2xl px-4 py-3 bg-foreground/5 text-foreground font-serif rounded-tl-sm">
+              <div className="max-w-[85%] rounded-[24px] px-4 py-3 bg-foreground/5 text-foreground font-serif rounded-tl-sm">
                 <div className="flex space-x-1 items-center h-5">
                   <div className="w-1.5 h-1.5 bg-foreground/40 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
                   <div className="w-1.5 h-1.5 bg-foreground/40 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />

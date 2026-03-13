@@ -1,37 +1,39 @@
 @import "tailwindcss";
 
 @theme {
-  --color-background: oklch(var(--background));
-  --color-foreground: oklch(var(--foreground));
-  --color-primary: oklch(var(--primary));
-  --color-primary-foreground: oklch(var(--primary-foreground));
-  --color-border: oklch(var(--border));
+  --color-background: var(--background);
+  --color-surface: var(--surface);
+  --color-foreground: var(--foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-border: var(--border);
+  --shadow-m3: 0 4px 6px -1px rgb(0 0 0 / 0.05), 0 2px 4px -2px rgb(0 0 0 / 0.05);
   --font-serif: var(--font-newsreader);
   --font-mono: var(--font-geist-mono);
 }
 
 @layer base {
   :root {
-    /* Sandstone Light Theme - Warm, Earthy, Paper */
-    --background: 98% 0.01 75;  /* Warm cream */
-    --foreground: 25% 0.02 75;  /* Deep warm charcoal text */
-    --primary: 30% 0.03 75;     /* Dark warm slate accent */
-    --primary-foreground: 98% 0.01 75; 
-    --border: 90% 0.02 75;      /* Subtle warm border */
+    --background: #F8F9FA;
+    --surface: #FFFFFF;
+    --foreground: #1E1E1E;
+    --primary: #0B57D0;
+    --primary-foreground: #FFFFFF;
+    --border: rgba(0, 0, 0, 0.05);
   }
 
   .dark {
-    /* Charcoal Dark Theme - Deep, Cool Slate */
-    --background: 18% 0.01 220; /* Deep slate gray */
-    --foreground: 92% 0.01 220; /* Crisp off-white text */
-    --primary: 85% 0.02 220;    /* Light slate accent */
-    --primary-foreground: 18% 0.01 220;
-    --border: 28% 0.01 220;     /* Subtle slate border */
+    --background: #0E0E0E;
+    --surface: #1E1E1E;
+    --foreground: #E3E3E3;
+    --primary: #A8C7FA;
+    --primary-foreground: #0E0E0E;
+    --border: rgba(255, 255, 255, 0.05);
   }
 
   body {
-    background-color: oklch(var(--background));
-    color: oklch(var(--foreground));
+    background-color: var(--background);
+    color: var(--foreground);
     font-family: var(--font-serif), serif;
   }
 }

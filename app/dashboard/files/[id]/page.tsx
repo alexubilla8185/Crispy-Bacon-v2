@@ -231,7 +231,7 @@ export default function InsightDetailPage({ params }: { params: Promise<{ id: st
         <div className="flex items-center gap-3">
           <button 
             onClick={() => setShowDeleteModal(true)}
-            className="min-h-[44px] min-w-[44px] flex items-center justify-center rounded-xl text-sm font-mono border transition-all text-red-500 hover:bg-red-500/10 border-red-500/20 focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+            className="min-h-[44px] min-w-[44px] flex items-center justify-center rounded-full text-sm font-mono border transition-all text-red-500 hover:bg-red-500/10 border-red-500/20 focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none focus-visible:ring-offset-2 focus-visible:ring-offset-background"
             aria-label="Delete this intelligence"
           >
             <Trash className="w-4 h-4" />
@@ -292,7 +292,7 @@ export default function InsightDetailPage({ params }: { params: Promise<{ id: st
         <section>
           <h2 className="text-xs font-mono text-foreground/50 uppercase tracking-wider mb-4">AI Summary</h2>
           {insight.processing_status === 'uploading' || insight.processing_status === 'analyzing' ? (
-            <div className="p-6 md:p-8 rounded-3xl bg-primary/5 border border-foreground/10 space-y-8">
+            <div className="p-6 md:p-8 rounded-[32px] bg-primary/5 border border-foreground/10 space-y-8">
               <div className="space-y-3">
                 <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded-md animate-pulse w-full"></div>
                 <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded-md animate-pulse w-11/12"></div>
@@ -323,7 +323,7 @@ export default function InsightDetailPage({ params }: { params: Promise<{ id: st
               </div>
             </div>
           ) : insight.processing_status === 'failed' || isTimedOut ? (
-            <div className="p-6 rounded-2xl border border-dashed border-red-500/20 bg-red-500/5 flex flex-col items-center justify-center text-center gap-4">
+            <div className="p-6 rounded-[24px] border border-dashed border-red-500/20 bg-red-500/5 flex flex-col items-center justify-center text-center gap-4">
               <span className="font-mono text-sm text-red-500/80">
                 Analysis failed or timed out.
               </span>
@@ -336,7 +336,7 @@ export default function InsightDetailPage({ params }: { params: Promise<{ id: st
               </button>
             </div>
           ) : (
-            <div className="p-6 md:p-8 rounded-3xl bg-primary/5 border border-foreground/10 space-y-8">
+            <div className="p-6 md:p-8 rounded-[32px] bg-primary/5 border border-foreground/10 space-y-8">
               <p className="font-serif text-lg md:text-xl leading-relaxed text-foreground/90">
                 {summary || 'No summary available.'}
               </p>
@@ -380,7 +380,7 @@ export default function InsightDetailPage({ params }: { params: Promise<{ id: st
               <ChevronDown className={`w-4 h-4 transition-transform ${isRawTextOpen ? 'rotate-180' : ''}`} />
             </button>
             {isRawTextOpen && (
-              <div className="p-6 rounded-2xl bg-background border border-foreground/10 overflow-x-auto animate-in fade-in slide-in-from-top-2 duration-300">
+              <div className="p-6 rounded-[24px] bg-background border border-foreground/10 overflow-x-auto animate-in fade-in slide-in-from-top-2 duration-300">
                 <pre className="font-mono text-xs md:text-sm text-foreground/70 whitespace-pre-wrap break-words">
                   {insight.raw_content}
                 </pre>
@@ -407,20 +407,20 @@ export default function InsightDetailPage({ params }: { params: Promise<{ id: st
 
       {showDeleteModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm">
-          <div className="w-full max-w-md rounded-2xl bg-background p-6 shadow-2xl border border-foreground/10">
+          <div className="w-full max-w-md rounded-[32px] bg-background p-6 shadow-2xl border border-foreground/10">
             <h2 className="font-serif text-xl mb-4">Delete Intelligence?</h2>
             <p className="text-foreground/60 mb-6">This action cannot be undone.</p>
             <div className="flex justify-end gap-3">
               <button
                 onClick={() => setShowDeleteModal(false)}
-                className="px-4 py-2 rounded-xl text-sm font-medium hover:bg-foreground/5 transition-colors focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                className="px-4 py-2 rounded-full text-sm font-medium hover:bg-foreground/5 transition-colors focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none focus-visible:ring-offset-2 focus-visible:ring-offset-background"
                 aria-label="Cancel"
               >
                 Cancel
               </button>
               <button
                 onClick={handleDelete}
-                className="px-4 py-2 rounded-xl text-sm font-medium bg-red-500 text-white hover:bg-red-600 transition-colors focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                className="px-4 py-2 rounded-full text-sm font-medium bg-red-500 text-white hover:bg-red-600 transition-colors focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none focus-visible:ring-offset-2 focus-visible:ring-offset-background"
               >
                 Confirm Delete
               </button>

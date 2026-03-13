@@ -114,7 +114,7 @@ export function AudioPlayer({ audioPath }: AudioPlayerProps) {
   };
 
   return (
-    <div className="bg-foreground/5 border border-foreground/10 p-4 rounded-2xl flex items-center gap-4">
+    <div className="bg-foreground/5 border border-foreground/10 p-4 rounded-[24px] flex items-center gap-4">
       {signedUrl && (
         <audio
           ref={audioRef}
@@ -153,7 +153,7 @@ export function AudioPlayer({ audioPath }: AudioPlayerProps) {
         className="flex-1 h-2 bg-foreground/10 rounded-full cursor-pointer accent-primary disabled:opacity-50 disabled:cursor-not-allowed"
       />
 
-      <button onClick={toggleSpeed} className="px-3 py-1.5 rounded-lg bg-background border border-foreground/10 text-xs font-mono hover:bg-foreground/5 transition-colors">
+      <button onClick={toggleSpeed} className="px-3 py-1.5 rounded-[16px] bg-background border border-foreground/10 text-xs font-mono hover:bg-foreground/5 transition-colors">
         {playbackRate}x
       </button>
 

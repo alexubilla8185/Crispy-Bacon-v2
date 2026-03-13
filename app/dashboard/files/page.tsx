@@ -217,20 +217,20 @@ export default function FilesPage() {
 
       {itemToDelete && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm">
-          <div className="w-full max-w-md rounded-2xl bg-background p-6 shadow-2xl border border-foreground/10">
+          <div className="w-full max-w-md rounded-[32px] bg-background p-6 shadow-2xl border border-foreground/10">
             <h2 className="font-serif text-xl mb-4">Delete Intelligence?</h2>
             <p className="text-foreground/60 mb-6">This action cannot be undone.</p>
             <div className="flex justify-end gap-3">
               <button
                 onClick={() => setItemToDelete(null)}
-                className="px-4 py-2 rounded-xl text-sm font-medium hover:bg-foreground/5 transition-colors focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                className="px-4 py-2 rounded-full text-sm font-medium hover:bg-foreground/5 transition-colors focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none focus-visible:ring-offset-2 focus-visible:ring-offset-background"
                 aria-label="Cancel"
               >
                 Cancel
               </button>
               <button
                 onClick={handleDelete}
-                className="px-4 py-2 rounded-xl text-sm font-medium bg-red-500 text-white hover:bg-red-600 transition-colors focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                className="px-4 py-2 rounded-full text-sm font-medium bg-red-500 text-white hover:bg-red-600 transition-colors focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none focus-visible:ring-offset-2 focus-visible:ring-offset-background"
               >
                 Confirm Delete
               </button>

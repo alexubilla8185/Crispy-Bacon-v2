@@ -36,12 +36,12 @@ export function ShareModal({ insightId, onClose }: { insightId: string; onClose:
 
   return (
     <div className="fixed inset-0 bg-black/20 flex items-center justify-center p-4 z-50">
-      <div className="bg-[#E4E3E0] p-8 rounded-3xl shadow-xl max-w-sm w-full space-y-6">
+      <div className="bg-[#E4E3E0] p-8 rounded-[32px] shadow-xl max-w-sm w-full space-y-6">
         <h2 className="font-serif text-2xl">Share Intelligence</h2>
         <select 
           value={expiration} 
           onChange={(e) => setExpiration(e.target.value as any)}
-          className="w-full p-3 rounded-xl border border-black/10 bg-transparent"
+          className="w-full p-3 rounded-[24px] border border-black/10 bg-transparent"
         >
           <option value="24h">Expires in 24 Hours</option>
           <option value="7d">Expires in 7 Days</option>

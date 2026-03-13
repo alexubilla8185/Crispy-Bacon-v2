@@ -21,11 +21,11 @@ export default function Sidebar({ email }: { email?: string }) {
 
   return (
     <aside
-      className={`hidden md:flex flex-col border-r border-foreground/10 bg-background transition-all duration-300 ${
+      className={`hidden md:flex flex-col bg-background transition-all duration-300 ${
         isSidebarOpen ? 'w-64' : 'w-20'
       }`}
     >
-      <div className="p-4 flex items-center justify-between border-b border-foreground/10 h-16 overflow-hidden">
+      <div className="p-4 flex items-center justify-between h-16 overflow-hidden">
         {isSidebarOpen ? (
           <div className="flex items-center gap-2 truncate">
             <CrunchWrapLogo className="text-primary shrink-0" size={24} />
@@ -41,7 +41,7 @@ export default function Sidebar({ email }: { email?: string }) {
         {isSidebarOpen && (
           <TactileButton
             onClick={toggleSidebar}
-            className="p-2 rounded-full hover:bg-foreground/5 transition-colors text-foreground/70 hover:text-foreground bg-transparent shrink-0"
+            className="p-2 rounded-full hover:bg-black/5 dark:hover:bg-white/5 transition-colors duration-200 text-foreground/70 hover:text-foreground bg-transparent shrink-0"
             aria-label="Toggle Sidebar"
           >
             <PanelLeftClose size={20} />
@@ -57,10 +57,10 @@ export default function Sidebar({ email }: { email?: string }) {
             <Link
               key={item.name}
               href={item.href}
-              className={`flex items-center gap-3 px-3 py-2.5 rounded-full transition-colors ${
+              className={`flex items-center gap-3 px-3 py-2.5 rounded-full transition-colors duration-200 ${
                 isActive
                   ? 'bg-primary/10 text-primary font-medium'
-                  : 'text-foreground/70 hover:bg-foreground/5 hover:text-foreground'
+                  : 'text-foreground/70 hover:bg-black/5 dark:hover:bg-white/5 hover:text-foreground'
               }`}
             >
               <Icon size={20} className="shrink-0" />
@@ -70,7 +70,7 @@ export default function Sidebar({ email }: { email?: string }) {
         })}
       </nav>
 
-      <div className="p-4 border-t border-foreground/10 flex flex-col gap-4">
+      <div className="p-4 flex flex-col gap-4">
         {isSidebarOpen && (
           <div className="mb-2">
             <ActiveUsers />
@@ -78,16 +78,16 @@ export default function Sidebar({ email }: { email?: string }) {
         )}
         <TactileButton
           onClick={toggleTheme}
-          className="flex items-center gap-3 px-3 py-2.5 rounded-full text-foreground/70 hover:bg-foreground/5 hover:text-foreground transition-colors w-full bg-transparent"
-          aria-label={theme === 'charcoal' ? 'Switch to Sandstone Mode' : 'Switch to Charcoal Mode'}
+          className="flex items-center gap-3 px-3 py-2.5 rounded-full text-foreground/70 hover:bg-black/5 dark:hover:bg-white/5 hover:text-foreground transition-colors duration-200 w-full bg-transparent"
+          aria-label={theme === 'charcoal' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
         >
           {theme === 'charcoal' ? <Sun size={20} className="shrink-0" /> : <Moon size={20} className="shrink-0" />}
           {isSidebarOpen && (
-            <span className="font-sans text-sm">{theme === 'charcoal' ? 'Sandstone Mode' : 'Charcoal Mode'}</span>
+            <span className="font-sans text-sm">{theme === 'charcoal' ? 'Light Mode' : 'Dark Mode'}</span>
           )}
         </TactileButton>
         {isSidebarOpen && email && (
-          <div className="px-3 py-2 text-xs font-mono text-foreground/50 truncate">
+          <div className="px-3 py-2 text-xs font-mono text-gray-500 dark:text-gray-400 truncate">
             {email}
           </div>
         )}

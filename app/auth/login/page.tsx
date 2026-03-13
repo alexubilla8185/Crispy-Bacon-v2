@@ -47,7 +47,7 @@ export default function LoginPage() {
 
   return (
     <main className="min-h-screen flex items-center justify-center p-4 bg-background text-foreground">
-      <div className="w-full max-w-md p-8 rounded-[2rem] border border-foreground/10 bg-primary/5">
+      <div className="w-full max-w-md p-8 rounded-[32px] border border-foreground/10 bg-primary/5">
         <div className="mb-8 text-center">
           <h1 className="text-3xl font-serif font-medium tracking-tight mb-2">
             Crunch Wrap
@@ -59,7 +59,7 @@ export default function LoginPage() {
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
           {error && (
-            <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-500 text-sm font-mono text-center">
+            <div className="p-3 rounded-[24px] bg-red-500/10 border border-red-500/20 text-red-500 text-sm font-mono text-center">
               {error}
             </div>
           )}

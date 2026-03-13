@@ -135,7 +135,7 @@ export default function SettingsPage() {
 
       <div className="space-y-8">
         {/* Aesthetics Section */}
-        <section className="p-6 md:p-8 rounded-3xl bg-primary/5 border border-foreground/10">
+        <section className="p-6 md:p-8 rounded-[32px] bg-primary/5 border border-foreground/10">
           <div className="flex items-center gap-3 mb-6">
             <Palette className="w-6 h-6 text-primary" />
             <h2 className="text-xl font-serif font-medium">Aesthetics</h2>
@@ -172,7 +172,7 @@ export default function SettingsPage() {
         </section>
 
         {/* Data Ownership Section */}
-        <section className="p-6 md:p-8 rounded-3xl bg-primary/5 border border-foreground/10">
+        <section className="p-6 md:p-8 rounded-[32px] bg-primary/5 border border-foreground/10">
           <div className="flex items-center gap-3 mb-6">
             <Download className="w-6 h-6 text-primary" />
             <h2 className="text-xl font-serif font-medium">Data Ownership</h2>
@@ -199,7 +199,7 @@ export default function SettingsPage() {
         </section>
 
         {/* Intelligence Section */}
-        <section className="p-6 md:p-8 rounded-3xl bg-primary/5 border border-foreground/10">
+        <section className="p-6 md:p-8 rounded-[32px] bg-primary/5 border border-foreground/10">
           <div className="flex items-center gap-3 mb-6">
             <BrainCircuit className="w-6 h-6 text-primary" />
             <h2 className="text-xl font-serif font-medium">Intelligence</h2>
@@ -267,7 +267,7 @@ export default function SettingsPage() {
         </section>
 
         {/* Local Storage Section */}
-        <section className="p-6 md:p-8 rounded-3xl bg-primary/5 border border-foreground/10">
+        <section className="p-6 md:p-8 rounded-[32px] bg-primary/5 border border-foreground/10">
           <div className="flex items-center gap-3 mb-6">
             <Database className="w-6 h-6 text-primary" />
             <h2 className="text-xl font-serif font-medium">Local Storage</h2>
@@ -298,7 +298,7 @@ export default function SettingsPage() {
         </section>
 
         {/* Account Section */}
-        <section className="p-6 md:p-8 rounded-3xl bg-primary/5 border border-foreground/10">
+        <section className="p-6 md:p-8 rounded-[32px] bg-primary/5 border border-foreground/10">
           <div className="flex items-center gap-3 mb-6">
             <User className="w-6 h-6 text-primary" />
             <h2 className="text-xl font-serif font-medium">Account</h2>
@@ -326,14 +326,14 @@ export default function SettingsPage() {
 
       {showClearModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm">
-          <div className="w-full max-w-md rounded-2xl bg-background p-6 shadow-2xl border border-foreground/10">
+          <div className="w-full max-w-md rounded-[32px] bg-background p-6 shadow-2xl border border-foreground/10">
             <h2 className="font-serif text-xl mb-4">Wipe Local Database?</h2>
             <p className="text-foreground/60 mb-6">This will permanently destroy all local intelligence and audio files. This cannot be undone.</p>
             <div className="flex justify-end gap-3">
               <button
                 onClick={() => setShowClearModal(false)}
                 disabled={isClearing}
-                className="px-4 py-2 rounded-xl text-sm font-medium hover:bg-foreground/5 transition-colors disabled:opacity-50 focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                className="px-4 py-2 rounded-full text-sm font-medium hover:bg-foreground/5 transition-colors disabled:opacity-50 focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none focus-visible:ring-offset-2 focus-visible:ring-offset-background"
                 aria-label="Cancel"
               >
                 Cancel
@@ -341,7 +341,7 @@ export default function SettingsPage() {
               <button
                 onClick={handleClearCache}
                 disabled={isClearing}
-                className="px-4 py-2 rounded-xl text-sm font-medium bg-red-500 text-white hover:bg-red-600 transition-colors disabled:opacity-50 flex items-center gap-2 focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                className="px-4 py-2 rounded-full text-sm font-medium bg-red-500 text-white hover:bg-red-600 transition-colors disabled:opacity-50 flex items-center gap-2 focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none focus-visible:ring-offset-2 focus-visible:ring-offset-background"
               >
                 {isClearing ? 'Wiping...' : 'Confirm Wipe'}
               </button>

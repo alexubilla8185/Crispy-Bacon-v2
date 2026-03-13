@@ -7,7 +7,7 @@ import dynamic from 'next/dynamic';
 
 const MarkdownRenderer = dynamic(() => import('@/components/ui/MarkdownRenderer'), {
   ssr: false,
-  loading: () => <div className="animate-pulse bg-foreground/5 h-20 rounded-xl" />,
+  loading: () => <div className="animate-pulse bg-foreground/5 h-20 rounded-[24px]" />,
 });
 
 export default function ChatPage() {
@@ -83,7 +83,7 @@ export default function ChatPage() {
         <div className="max-w-3xl mx-auto pointer-events-auto">
           <form
             onSubmit={handleSubmit}
-            className="relative flex items-end bg-background border border-foreground/10 rounded-2xl shadow-sm focus-within:ring-1 focus-within:ring-foreground/20 transition-all"
+            className="relative flex items-end bg-background border border-foreground/10 rounded-[24px] shadow-sm focus-within:ring-1 focus-within:ring-foreground/20 transition-all"
           >
             <textarea
               className="w-full max-h-48 min-h-[56px] bg-transparent border-none resize-none py-4 pl-4 pr-12 focus:outline-none focus:ring-0 font-sans text-base placeholder:text-foreground/30"
@@ -101,7 +101,7 @@ export default function ChatPage() {
             <button
               type="submit"
               disabled={isLoading || !input.trim()}
-              className="absolute right-2 bottom-2 p-2 rounded-xl text-foreground/50 hover:text-foreground hover:bg-foreground/5 disabled:opacity-50 disabled:hover:bg-transparent transition-colors"
+              className="absolute right-2 bottom-2 p-2 rounded-[24px] text-foreground/50 hover:text-foreground hover:bg-foreground/5 disabled:opacity-50 disabled:hover:bg-transparent transition-colors"
             >
               <Send size={20} />
             </button>

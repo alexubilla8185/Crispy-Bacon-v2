@@ -1,7 +1,7 @@
 'use client';
 
 import { useRef, useEffect, useState } from 'react';
-import { UploadCloud, Mic, Square } from 'lucide-react';
+import { UploadCloud, Mic, Square, FileText, Activity, Zap } from 'lucide-react';
 import Link from 'next/link';
 import { useFileDrop } from '@/hooks/useFileDrop';
 import { useMicrophone } from '@/hooks/useMicrophone';
@@ -44,17 +44,17 @@ export default function HubPage() {
   };
 
   return (
-    <div className="flex-1 flex flex-col p-4 sm:p-6 md:p-8 max-w-5xl mx-auto w-full gap-8 pb-12">
+    <div className="flex-1 flex flex-col p-4 sm:p-6 md:p-8 max-w-6xl mx-auto w-full gap-8 pb-12">
       <header>
         <h1 className="text-3xl md:text-4xl font-serif font-medium tracking-tight mb-2">
-          Intelligence Hub
+          Command Center
         </h1>
         <p className="text-foreground/60 font-sans text-sm md:text-base">
-          Tactical Command Center. Drop files, audio, and notes to begin import.
+          Tactical intelligence hub. Drop files, audio, and notes to begin import.
         </p>
       </header>
 
-      {/* The Intake (Top 30%) */}
+      {/* The Expressive Dropzone (Top Section) */}
       <div className="w-full">
         <div
           onDragEnter={onDragEnter}
@@ -62,10 +62,10 @@ export default function HubPage() {
           onDragLeave={onDragLeave}
           onDrop={onDrop}
           onClick={() => fileInputRef.current?.click()}
-          className={`w-full py-8 px-6 md:px-12 rounded-3xl border-2 border-dashed transition-all flex flex-col md:flex-row items-center justify-between gap-6 group relative cursor-pointer ${
+          className={`w-full py-12 px-6 md:px-12 rounded-[32px] transition-transform duration-300 hover:scale-[1.01] flex flex-col md:flex-row items-center justify-between gap-6 group relative cursor-pointer overflow-hidden ${
             isDragging
-              ? 'border-primary bg-primary/10 scale-[1.01]'
-              : 'border-foreground/10 bg-primary/5 hover:bg-primary/10 hover:border-primary/20'
+              ? 'bg-primary/20 scale-[1.01]'
+              : 'bg-gradient-to-br from-blue-50/50 to-purple-50/50 dark:from-blue-900/10 dark:to-purple-900/10'
           }`}
         >
           <input
@@ -75,21 +75,21 @@ export default function HubPage() {
             ref={fileInputRef}
             onChange={handleFileInput}
           />
-          <div className="flex items-center gap-6">
+          <div className="flex items-center gap-6 relative z-10">
             <div
-              className={`w-14 h-14 rounded-full bg-background border flex items-center justify-center transition-transform shadow-sm shrink-0 ${
+              className={`w-16 h-16 rounded-full bg-white/80 dark:bg-black/50 backdrop-blur-sm flex items-center justify-center transition-transform shadow-sm shrink-0 ${
                 isDragging
-                  ? 'border-primary scale-110'
-                  : 'border-foreground/10 group-hover:scale-110'
+                  ? 'scale-110 text-primary'
+                  : 'group-hover:scale-110 text-foreground/70 group-hover:text-primary'
               }`}
             >
-              <UploadCloud className="w-6 h-6 text-primary opacity-80" />
+              <UploadCloud className="w-7 h-7" />
             </div>
             <div className="text-left">
-              <h2 className="text-lg font-serif font-medium mb-1">
+              <h2 className="text-xl font-serif font-medium mb-1 text-foreground/90">
                 {isDragging ? 'Drop to Save Locally' : 'Drop Intelligence Here'}
               </h2>
-              <p className="text-xs font-mono text-foreground/50 max-w-sm">
+              <p className="text-sm font-sans text-foreground/60 max-w-sm">
                 Markdown, TXT, or Native Audio.
               </p>
             </div>
@@ -102,7 +102,7 @@ export default function HubPage() {
                   e.stopPropagation();
                   stopRecording();
                 }}
-                className="flex items-center gap-3 px-6 py-3 rounded-full bg-red-500/10 border border-red-500/20 text-red-500 hover:bg-red-500/20 hover:opacity-100 animate-pulse"
+                className="flex items-center gap-3 px-6 py-3 rounded-full bg-red-500 text-white hover:bg-red-600 transition-colors animate-pulse shadow-md"
               >
                 <Square className="w-4 h-4 fill-current" />
                 <span className="font-mono font-medium">{formatTime(recordingTime)}</span>
@@ -113,7 +113,7 @@ export default function HubPage() {
                   e.stopPropagation();
                   startRecording();
                 }}
-                className="flex items-center gap-3 px-6 py-3 rounded-full bg-background border border-foreground/10 text-foreground hover:bg-foreground/5 hover:border-foreground/20 hover:opacity-100 shadow-sm cursor-pointer"
+                className="flex items-center gap-3 px-6 py-3 rounded-full bg-white dark:bg-[#1E1E1E] text-foreground hover:bg-foreground/5 transition-colors shadow-sm cursor-pointer"
               >
                 <Mic className="w-4 h-4" />
                 <span className="font-sans font-medium text-sm">Record Voice Note</span>
@@ -123,42 +123,69 @@ export default function HubPage() {
         </div>
       </div>
 
-      {/* The Pulse (Middle Divider) */}
-      <div className="w-full border-b border-foreground/10 pb-2">
-        <p className="font-mono text-[10px] md:text-xs uppercase text-foreground/50 tracking-widest">
-          INTELLIGENCE PULSE // {insights.length} IMPORTS PROCESSED // {allActionItems.length} ACTION ITEMS DETECTED
-        </p>
+      {/* M3 Metric Cards (Middle Section) */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 w-full">
+        <div className="bg-white dark:bg-[#1A1A1A] rounded-[24px] p-6 shadow-sm flex flex-col justify-center relative overflow-hidden group">
+          <div className="absolute top-0 right-0 p-6 opacity-10 group-hover:opacity-20 transition-opacity">
+            <FileText className="w-16 h-16" />
+          </div>
+          <p className="text-sm font-medium text-foreground/60 mb-2 relative z-10">Files Crunched</p>
+          <p className="text-4xl font-serif text-foreground relative z-10">{insights.length}</p>
+        </div>
+        <div className="bg-white dark:bg-[#1A1A1A] rounded-[24px] p-6 shadow-sm flex flex-col justify-center relative overflow-hidden group">
+          <div className="absolute top-0 right-0 p-6 opacity-10 group-hover:opacity-20 transition-opacity">
+            <Activity className="w-16 h-16" />
+          </div>
+          <p className="text-sm font-medium text-foreground/60 mb-2 relative z-10">Action Items</p>
+          <p className="text-4xl font-serif text-foreground relative z-10">{allActionItems.length}</p>
+        </div>
+        <div className="bg-white dark:bg-[#1A1A1A] rounded-[24px] p-6 shadow-sm flex flex-col justify-center relative overflow-hidden group">
+          <div className="absolute top-0 right-0 p-6 opacity-10 group-hover:opacity-20 transition-opacity">
+            <Zap className="w-16 h-16" />
+          </div>
+          <p className="text-sm font-medium text-foreground/60 mb-2 relative z-10">Fast Insights</p>
+          <p className="text-4xl font-serif text-foreground relative z-10">{insights.filter(i => i.processing_status === 'completed').length}</p>
+        </div>
       </div>
 
-      {/* The Action Matrix (Bottom 70%) */}
-      <div className="flex-1 flex flex-col">
+      {/* The Active Matrix (Bottom Section) */}
+      <div className="flex-1 flex flex-col w-full">
         <h2 className="font-serif text-2xl mb-6">Active Matrix</h2>
         
-        {allActionItems.length === 0 ? (
-          <div className="py-12 text-center border border-dashed border-foreground/10 rounded-2xl bg-foreground/5">
+        {insights.length === 0 ? (
+          <div className="py-12 text-center border border-dashed border-foreground/10 rounded-[24px] bg-foreground/5">
             <p className="text-foreground/50 font-sans text-sm">
               No active intelligence detected. Import a document to begin.
             </p>
           </div>
         ) : (
-          <div className="flex flex-col">
-            {allActionItems.map((item) => (
-              <div 
-                key={`${item.insightId}-${item.task}`} 
-                className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-foreground/5 py-4 hover:bg-foreground/5 px-2 -mx-2 rounded-lg transition-colors"
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 animate-in fade-in slide-in-from-bottom-4 duration-500 ease-out">
+            {insights.slice(0, 6).map((insight) => (
+              <Link 
+                key={insight.id}
+                href={`/dashboard/files/${insight.id}`}
+                className="bg-white dark:bg-[#1A1A1A] rounded-[24px] p-6 shadow-sm hover:shadow-md transition-all hover:-translate-y-1 flex flex-col gap-4 group border border-transparent hover:border-foreground/5"
               >
-                <p className="text-sm font-sans text-foreground/90 leading-relaxed flex-1">
-                  {item.task}
-                </p>
-                <Link 
-                  href={`/dashboard/files/${item.insightId}`}
-                  className="shrink-0 inline-flex items-center min-w-0 flex-1 justify-end"
-                >
-                  <span className="bg-primary/5 text-primary hover:bg-primary/10 transition-colors text-xs px-3 py-1.5 rounded-md font-medium truncate max-w-[200px]">
-                    {item.insightTitle}
+                <div className="flex items-start justify-between gap-2">
+                  <h3 className="font-serif text-lg font-medium line-clamp-2 group-hover:text-primary transition-colors">
+                    {insight.title || 'Untitled Document'}
+                  </h3>
+                </div>
+                <div className="mt-auto flex items-center justify-between pt-4 border-t border-foreground/5">
+                  <span className="text-xs text-foreground/50 font-mono">
+                    {new Date(insight.created_at).toLocaleDateString()}
                   </span>
-                </Link>
-              </div>
+                  <span className={`px-3 py-1 rounded-full text-[10px] uppercase tracking-wider font-bold ${
+                    insight.processing_status === 'completed' 
+                      ? 'bg-green-500/10 text-green-600 dark:text-green-400' 
+                      : insight.processing_status === 'failed'
+                      ? 'bg-red-500/10 text-red-600 dark:text-red-400'
+                      : 'bg-blue-500/10 text-blue-600 dark:text-blue-400 animate-pulse'
+                  }`}>
+                    {insight.processing_status}
+                  </span>
+                </div>
+              </Link>
             ))}
           </div>
         )}

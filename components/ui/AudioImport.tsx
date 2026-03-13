@@ -101,7 +101,7 @@ export default function AudioImport() {
   };
 
   return (
-    <div className="p-6 border border-foreground/10 rounded-2xl bg-background shadow-sm space-y-6">
+    <div className="p-6 border border-foreground/10 rounded-[24px] bg-background shadow-sm space-y-6">
       <h2 className="text-lg font-serif">Audio Import</h2>
       
       <div className="flex gap-4">
@@ -124,7 +124,7 @@ export default function AudioImport() {
           id="file-upload"
         />
         <label htmlFor="file-upload" className="flex-1">
-          <div className="h-full flex items-center justify-center gap-2 border border-foreground/10 rounded-xl cursor-pointer hover:bg-foreground/5 transition-colors">
+          <div className="h-full flex items-center justify-center gap-2 border border-foreground/10 rounded-[24px] cursor-pointer hover:bg-foreground/5 transition-colors">
             <Upload size={20} />
             Import File
           </div>
@@ -156,7 +156,7 @@ export default function AudioImport() {
       )}
 
       {localSaveStatus === 'error' && (
-        <div className="p-4 bg-red-50 dark:bg-red-900/10 border border-red-200 dark:border-red-800 rounded-xl flex items-center gap-3 text-red-700 dark:text-red-400">
+        <div className="p-4 bg-red-50 dark:bg-red-900/10 border border-red-200 dark:border-red-800 rounded-[24px] flex items-center gap-3 text-red-700 dark:text-red-400">
           <AlertCircle size={20} />
           <div className="flex-1">
             <p className="text-sm font-medium">Network disconnected.</p>
