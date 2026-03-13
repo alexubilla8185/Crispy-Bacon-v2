@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { getAllInsights, deleteInsight } from '@/lib/storage/localDbService';
 import { Insight } from '@/lib/schemas';
-import { Mic, FileText, File as FileIcon, ArrowRight, Trash, RefreshCw } from 'lucide-react';
+import { Mic, FileText, File as FileIcon, ArrowRight, Trash, Search } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useUIStore } from '@/lib/store';
@@ -64,14 +64,20 @@ export default function FilesPage() {
     });
   };
 
+  const [searchQuery, setSearchQuery] = useState('');
+
+  const filteredInsights = insights.filter(insight => 
+    insight.title?.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
   const getIcon = (insight: Insight) => {
     if (insight.raw_content instanceof Blob && insight.raw_content.type.startsWith('audio/')) {
-      return <Mic className="w-4 h-4 text-gray-500 dark:text-gray-400" />;
+      return <Mic className="w-5 h-5 text-primary" />;
     }
     if (insight.title.toLowerCase().includes('audio') || insight.title.toLowerCase().includes('voice')) {
-      return <Mic className="w-4 h-4 text-gray-500 dark:text-gray-400" />;
+      return <Mic className="w-5 h-5 text-primary" />;
     }
-    return <FileText className="w-4 h-4 text-gray-500 dark:text-gray-400" />;
+    return <FileText className="w-5 h-5 text-primary" />;
   };
 
   const getStatusIndicator = (status: Insight['processing_status']) => {
@@ -139,19 +145,26 @@ export default function FilesPage() {
   return (
     <div className="flex-1 flex flex-col p-4 sm:p-6 md:p-8 max-w-5xl mx-auto w-full">
       <header className="mb-8 sm:mb-12">
-        <h1 className="text-3xl md:text-4xl font-serif font-medium tracking-tight mb-2">
+        <h1 className="text-3xl md:text-4xl font-serif font-medium tracking-tight mb-6">
           Intelligence Library
         </h1>
-        <p className="text-gray-500 dark:text-gray-400 font-sans text-sm md:text-base">
-          {isLoading ? 'Loading...' : `${insights.length} file${insights.length === 1 ? '' : 's'} indexed locally.`}
-        </p>
+        <div className="relative">
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+          <input
+            type="text"
+            placeholder="Search your insights..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full h-12 pl-12 pr-6 rounded-full bg-surface shadow-sm border border-transparent focus:border-primary/20 focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
+          />
+        </div>
       </header>
 
       {isLoading ? (
         <div className="flex-1 flex items-center justify-center">
           <span className="font-mono text-sm text-gray-500 dark:text-gray-400 animate-pulse">Loading library...</span>
         </div>
-      ) : insights.length === 0 ? (
+      ) : filteredInsights.length === 0 ? (
         <div className="flex-1 flex flex-col items-center justify-center text-center max-w-md mx-auto">
           <div className="w-16 h-16 mb-6 rounded-full bg-primary/5 border border-black/10 dark:border-white/10 flex items-center justify-center">
             <FileIcon className="w-8 h-8 text-gray-500 dark:text-gray-400" />
@@ -168,50 +181,43 @@ export default function FilesPage() {
           </Link>
         </div>
       ) : (
-        <div className="flex-1 overflow-y-auto pr-0 md:pr-4 -mr-0 md:-mr-4">
-          <div className="flex flex-col">
-            {/* Table Header */}
-            <div className="hidden md:grid grid-cols-12 gap-4 px-4 py-3 border-b border-black/10 dark:border-white/10 text-xs font-mono text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">
-              <div className="col-span-6 lg:col-span-7">Title</div>
-              <div className="col-span-3 lg:col-span-3">Date</div>
-              <div className="col-span-3 lg:col-span-2 text-right">Status</div>
-            </div>
-
-            {/* List */}
-            <div className="flex flex-col">
-              {insights.map((insight) => (
-                <div
-                  onClick={() => router.push(`/dashboard/files/${insight.id}`)}
-                  key={insight.id}
-                  className="group grid grid-cols-1 md:grid-cols-12 gap-4 px-4 py-4 md:py-3 border-b border-black/5 dark:border-white/5 hover:bg-black/5 dark:hover:bg-white/5 transition-colors items-center cursor-pointer"
-                >
-                  <div className="col-span-1 md:col-span-6 lg:col-span-7 flex items-center gap-3 overflow-hidden min-w-0">
-                    <div className="shrink-0 w-8 h-8 rounded-full bg-background border border-black/10 dark:border-white/10 flex items-center justify-center group-hover:border-black/20 dark:group-hover:border-white/20 transition-colors">
-                      {getIcon(insight)}
-                    </div>
-                    <span className="font-serif text-base md:text-sm truncate min-w-0">
-                      {insight.title}
-                    </span>
-                  </div>
-                  
-                  <div className="col-span-1 md:col-span-3 lg:col-span-3 font-mono text-xs text-gray-500 dark:text-gray-400">
-                    {formatDate(insight.created_at)}
-                  </div>
-                  
-                  <div className="col-span-1 md:col-span-3 lg:col-span-2 flex flex-row items-center justify-between md:justify-end gap-2 font-mono">
-                    {getStatusIndicator(insight.processing_status)}
-                    <button
-                      onClick={(e) => { e.preventDefault(); e.stopPropagation(); setItemToDelete(insight.id); }}
-                      className="min-h-[44px] min-w-[44px] flex items-center justify-center text-gray-500 dark:text-gray-400 hover:text-red-500 hover:bg-red-500/10 rounded-full transition-colors focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none focus-visible:ring-offset-2 focus-visible:ring-offset-background"
-                      aria-label="Delete file"
-                    >
-                      <Trash className="w-4 h-4" />
-                    </button>
-                  </div>
+        <div className="flex flex-col">
+          {filteredInsights.map((insight) => (
+            <div
+              key={insight.id}
+              onClick={() => router.push(`/dashboard/files/${insight.id}`)}
+              className="bg-surface rounded-2xl p-4 sm:p-6 mb-3 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-sm hover:shadow-md transition-all hover:-translate-y-[2px] border border-transparent hover:border-black/5 dark:hover:border-white/5 group cursor-pointer"
+            >
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 rounded-full bg-background border border-black/10 dark:border-white/10 flex items-center justify-center">
+                  {getIcon(insight)}
                 </div>
-              ))}
+                <div>
+                  <h3 className="font-serif text-lg text-foreground truncate">{insight.title || 'Untitled Document'}</h3>
+                  <p className="text-sm text-gray-500">{formatDate(insight.created_at)}</p>
+                </div>
+              </div>
+              
+              <div className="flex items-center justify-between sm:justify-end gap-4">
+                {insight.intelligence?.topics && Array.isArray(insight.intelligence.topics) && (
+                  <div className="flex flex-wrap gap-2">
+                    {insight.intelligence.topics.slice(0, 2).map((topic: string) => (
+                      <span key={topic} className="px-3 py-1 rounded-full text-xs font-medium bg-black/5 dark:bg-white/5 border border-black/5 dark:border-white/5">
+                        {topic}
+                      </span>
+                    ))}
+                  </div>
+                )}
+                <button
+                  onClick={(e) => { e.preventDefault(); e.stopPropagation(); setItemToDelete(insight.id); }}
+                  className="opacity-0 group-hover:opacity-100 transition-opacity min-h-[44px] min-w-[44px] flex items-center justify-center text-gray-500 dark:text-gray-400 hover:text-red-500 hover:bg-red-500/10 rounded-full"
+                  aria-label="Delete file"
+                >
+                  <Trash className="w-4 h-4" />
+                </button>
+              </div>
             </div>
-          </div>
+          ))}
         </div>
       )}
 

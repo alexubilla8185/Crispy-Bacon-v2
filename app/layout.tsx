@@ -39,8 +39,8 @@ export const metadata: Metadata = {
 
 export default function RootLayout({children}: {children: React.ReactNode}) {
   return (
-    <html lang="en" className={`${newsreader.variable} ${geistMono.variable}`}>
-      <body className="antialiased selection:bg-primary/30" suppressHydrationWarning>
+    <html lang="en" className={`${newsreader.variable} ${geistMono.variable} min-h-screen overflow-x-hidden bg-background font-sans antialiased`}>
+      <body className="selection:bg-primary/30" suppressHydrationWarning>
         <ThemeProvider>
           <QueryProvider>
             {children}

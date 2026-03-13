@@ -1,7 +1,7 @@
 'use client';
 
 import { useRef, useEffect, useState } from 'react';
-import { UploadCloud, Mic, Square, FileText, Activity, Zap } from 'lucide-react';
+import { UploadCloud, Mic, Square, FileText, Activity, Zap, AlertCircle, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import { useFileDrop } from '@/hooks/useFileDrop';
 import { useMicrophone } from '@/hooks/useMicrophone';
@@ -47,10 +47,10 @@ export default function HubPage() {
     <div className="flex-1 flex flex-col p-4 sm:p-6 md:p-8 max-w-6xl mx-auto w-full gap-8 pb-12">
       <header>
         <h1 className="text-3xl md:text-4xl font-serif font-medium tracking-tight mb-2">
-          Command Center
+          Overview
         </h1>
         <p className="text-gray-500 dark:text-gray-400 font-sans text-sm md:text-base">
-          Tactical intelligence hub. Drop files, audio, and notes to begin import.
+          Drop files, audio, and notes to generate instant AI summaries.
         </p>
       </header>
 
@@ -150,12 +150,12 @@ export default function HubPage() {
 
       {/* The Active Matrix (Bottom Section) */}
       <div className="flex-1 flex flex-col w-full">
-        <h2 className="font-serif text-2xl mb-6">Active Matrix</h2>
+        <h2 className="font-serif text-2xl mb-6">Recent Insights</h2>
         
         {insights.length === 0 ? (
           <div className="py-12 text-center border border-dashed border-black/10 dark:border-white/10 rounded-[24px] bg-black/5 dark:bg-white/5">
             <p className="text-gray-500 dark:text-gray-400 font-sans text-sm">
-              No active intelligence detected. Import a document to begin.
+              No files yet. Import a document or record audio to begin.
             </p>
           </div>
         ) : (
@@ -164,27 +164,21 @@ export default function HubPage() {
               <Link 
                 key={insight.id}
                 href={`/dashboard/files/${insight.id}`}
-                className="bg-surface rounded-[24px] p-6 shadow-sm hover:shadow-md transition-all hover:-translate-y-1 flex flex-col gap-4 group border border-transparent hover:border-black/5 dark:hover:border-white/5"
+                className="bg-surface rounded-[24px] p-6 shadow-sm hover:shadow-md transition-all hover:-translate-y-1 flex flex-col gap-2 group border border-transparent hover:border-black/5 dark:hover:border-white/5"
               >
                 <div className="flex items-start justify-between gap-2">
-                  <h3 className="font-serif text-lg font-medium line-clamp-2 group-hover:text-primary transition-colors">
-                    {insight.title || 'Untitled Document'}
-                  </h3>
-                </div>
-                <div className="mt-auto flex items-center justify-between pt-4 border-t border-black/5 dark:border-white/5">
-                  <span className="text-xs text-gray-500 dark:text-gray-400 font-mono">
-                    {new Date(insight.created_at).toLocaleDateString()}
+                  <span className="text-xs text-gray-500 font-medium tracking-wide uppercase">
+                    {new Date(insight.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                   </span>
-                  <span className={`px-3 py-1 rounded-full text-[10px] uppercase tracking-wider font-bold ${
-                    insight.processing_status === 'completed' 
-                      ? 'bg-green-500/10 text-green-600 dark:text-green-400' 
-                      : insight.processing_status === 'failed'
-                      ? 'bg-red-500/10 text-red-600 dark:text-red-400'
-                      : 'bg-blue-500/10 text-blue-600 dark:text-blue-400 animate-pulse'
-                  }`}>
-                    {insight.processing_status}
-                  </span>
+                  {insight.processing_status === 'failed' && <AlertCircle className="w-4 h-4 text-red-500" />}
+                  {(insight.processing_status === 'analyzing' || insight.processing_status === 'uploading') && <Loader2 className="w-4 h-4 text-blue-500 animate-spin" />}
                 </div>
+                <h3 className="font-serif text-lg font-medium truncate group-hover:text-primary transition-colors">
+                  {insight.title || 'Untitled Document'}
+                </h3>
+                <p className="text-sm text-gray-500 dark:text-gray-400 line-clamp-2 mt-2 leading-relaxed">
+                  {insight.intelligence?.summary || 'Processing intelligence...'}
+                </p>
               </Link>
             ))}
           </div>
