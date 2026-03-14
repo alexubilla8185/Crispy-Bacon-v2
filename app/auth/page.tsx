@@ -50,6 +50,14 @@ export default function AuthPage() {
     }
   };
 
+  const isLocalEnv = process.env.NODE_ENV === 'development';
+
+  const handleBypass = (e: React.MouseEvent) => {
+    e.preventDefault();
+    document.cookie = "crunch_dev_bypass=true; path=/; max-age=86400; SameSite=None; Secure";
+    window.location.href = '/dashboard/hub';
+  };
+
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
       <div className="w-full max-w-md bg-surface p-8 rounded-3xl shadow-m3 border border-border flex flex-col gap-6">
@@ -110,6 +118,15 @@ export default function AuthPage() {
           </svg>
           Sign in with Google
         </button>
+        {isLocalEnv && (
+          <button
+            onClick={handleBypass}
+            type="button"
+            className="mt-2 w-full text-center text-sm text-foreground/50 hover:text-primary transition-colors underline decoration-foreground/20 hover:decoration-primary/50"
+          >
+            Sandbox Bypass (Dev Only)
+          </button>
+        )}
       </div>
     </div>
   );
