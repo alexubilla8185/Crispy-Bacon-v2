@@ -3,9 +3,9 @@ import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 
 export async function GET(request: Request) {
-  const { searchParams, origin } = new URL(request.url);
-  const code = searchParams.get('code');
-  const next = searchParams.get('next') ?? '/dashboard/hub';
+  const requestUrl = new URL(request.url);
+  const code = requestUrl.searchParams.get('code');
+  const origin = request.headers.get('x-forwarded-host') || requestUrl.origin;
 
   if (code) {
     const cookieStore = await cookies();
@@ -27,14 +27,10 @@ export async function GET(request: Request) {
     );
     
     const { error } = await supabase.auth.exchangeCodeForSession(code);
-    if (error) {
-      console.error('Auth callback error:', error);
-      return NextResponse.redirect(`${origin}/auth/error`);
+    if (!error) {
+      return NextResponse.redirect(`${origin}/dashboard/hub`);
     }
-
-    return NextResponse.redirect(`${origin}${next}`);
   }
 
-  // return the user to an error page with instructions
   return NextResponse.redirect(`${origin}/auth/error`);
 }
