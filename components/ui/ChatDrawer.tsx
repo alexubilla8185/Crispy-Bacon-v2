@@ -51,7 +51,7 @@ export function ChatDrawer({ isOpen, onClose, documentContext }: ChatDrawerProps
       
       {/* Drawer */}
       <div 
-        className={`fixed top-0 right-0 h-full w-full sm:w-96 bg-surface border-l border-black/5 dark:border-white/5 shadow-2xl transform transition-transform duration-300 ease-in-out z-50 flex flex-col [&::-webkit-scrollbar]:hidden ${
+        className={`fixed top-0 right-0 h-full w-full sm:w-96 bg-surface border-l border-border shadow-2xl transform transition-transform duration-300 ease-in-out z-50 flex flex-col [&::-webkit-scrollbar]:hidden ${
           isOpen ? 'translate-x-0' : 'translate-x-full'
         }`}
       >
@@ -60,7 +60,7 @@ export function ChatDrawer({ isOpen, onClose, documentContext }: ChatDrawerProps
           <h2 className="font-serif text-xl tracking-tight">Document Assistant</h2>
           <button 
             onClick={onClose}
-            className="p-2 rounded-full hover:bg-black/5 dark:hover:bg-white/5 text-gray-500 transition-colors"
+            className="p-2 rounded-full hover:bg-foreground/5 text-foreground/70 transition-colors"
           >
             <X className="w-5 h-5" />
           </button>
@@ -78,7 +78,7 @@ export function ChatDrawer({ isOpen, onClose, documentContext }: ChatDrawerProps
                     <button
                       key={prompt}
                       onClick={() => sendMessage(prompt)}
-                      className="rounded-full border border-black/10 dark:border-white/10 text-xs px-3 py-1.5 hover:bg-black/5 dark:hover:bg-white/5 transition-colors"
+                      className="rounded-full border border-border text-xs px-3 py-1.5 hover:bg-foreground/5 transition-colors"
                     >
                       {prompt}
                     </button>
@@ -95,8 +95,8 @@ export function ChatDrawer({ isOpen, onClose, documentContext }: ChatDrawerProps
                 <div 
                   className={`max-w-[85%] rounded-2xl px-4 py-3 text-sm ${
                     msg.role === 'user' 
-                      ? 'rounded-tr-sm bg-blue-500/10 text-blue-800 dark:bg-blue-400/10 dark:text-blue-200' 
-                      : 'rounded-tl-sm bg-black/5 dark:bg-white/5 text-foreground/90'
+                      ? 'rounded-tr-sm bg-primary/10 text-primary' 
+                      : 'rounded-tl-sm bg-foreground/5 text-foreground/90'
                   }`}
                 >
                   {msg.role === 'model' && <Sparkles className="w-3 h-3 inline mr-2 text-primary" />}
@@ -115,11 +115,11 @@ export function ChatDrawer({ isOpen, onClose, documentContext }: ChatDrawerProps
           )}
           {isLoading && (
             <div className="flex justify-start">
-              <div className="max-w-[85%] rounded-2xl rounded-tl-sm px-4 py-3 bg-black/5 dark:bg-white/5 text-foreground/90">
+              <div className="max-w-[85%] rounded-2xl rounded-tl-sm px-4 py-3 bg-foreground/5 text-foreground/90">
                 <div className="flex space-x-1 items-center h-5">
-                  <div className="w-1.5 h-1.5 bg-gray-400 dark:bg-gray-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                  <div className="w-1.5 h-1.5 bg-gray-400 dark:bg-gray-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                  <div className="w-1.5 h-1.5 bg-gray-400 dark:bg-gray-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                  <div className="w-1.5 h-1.5 bg-foreground/50 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                  <div className="w-1.5 h-1.5 bg-foreground/50 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                  <div className="w-1.5 h-1.5 bg-foreground/50 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
                 </div>
               </div>
             </div>
@@ -128,14 +128,14 @@ export function ChatDrawer({ isOpen, onClose, documentContext }: ChatDrawerProps
         </div>
 
         {/* Input Area */}
-        <form onSubmit={handleSubmit} className="rounded-full bg-black/5 dark:bg-white/5 px-4 py-2 mx-4 mb-4 flex items-center gap-2">
+        <form onSubmit={handleSubmit} className="rounded-full bg-foreground/5 px-4 py-2 mx-4 mb-4 flex items-center gap-2">
           <input
             type="text"
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
             placeholder="Ask a question..."
             disabled={isLoading}
-            className="flex-1 bg-transparent text-sm focus:outline-none disabled:opacity-50 placeholder:text-gray-400 dark:placeholder:text-gray-500"
+            className="flex-1 bg-transparent text-sm focus:outline-none disabled:opacity-50 placeholder:text-foreground/50"
           />
           <button
             type="submit"

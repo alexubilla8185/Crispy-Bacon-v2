@@ -20,7 +20,7 @@ export default function Sidebar({ email }: { email?: string }) {
 
   return (
     <aside
-      className={`hidden md:flex flex-col bg-background/50 backdrop-blur-sm transition-all duration-300 h-screen sticky top-0 ${
+      className={`hidden md:flex flex-col bg-surface border-r border-border transition-all duration-300 h-screen sticky top-0 ${
         isSidebarOpen ? 'w-64' : 'w-20'
       }`}
     >
@@ -35,7 +35,7 @@ export default function Sidebar({ email }: { email?: string }) {
         ) : (
           <TactileButton
             onClick={toggleSidebar}
-            className="flex justify-center w-full p-2 rounded-full hover:bg-black/5 dark:hover:bg-white/5 transition-colors duration-200 bg-transparent shrink-0"
+            className="flex justify-center w-full p-2 rounded-full hover:bg-foreground/5 transition-colors duration-200 bg-transparent shrink-0"
             aria-label="Expand Sidebar"
           >
             <CrunchWrapLogo className="text-primary shrink-0 hover:scale-105 transition-transform" size={24} />
@@ -45,7 +45,7 @@ export default function Sidebar({ email }: { email?: string }) {
         {isSidebarOpen && (
           <TactileButton
             onClick={toggleSidebar}
-            className="p-2 rounded-full hover:bg-black/5 dark:hover:bg-white/5 transition-colors duration-200 text-gray-500 dark:text-gray-400 hover:text-foreground bg-transparent shrink-0"
+            className="p-2 rounded-full hover:bg-foreground/5 transition-colors duration-200 text-foreground/70 hover:text-foreground bg-transparent shrink-0"
             aria-label="Toggle Sidebar"
           >
             <PanelLeftClose size={20} />
@@ -63,8 +63,8 @@ export default function Sidebar({ email }: { email?: string }) {
               href={item.href}
               className={`flex items-center gap-3 px-4 py-3 rounded-full transition-all duration-200 ${
                 isActive
-                  ? 'bg-blue-500/10 text-blue-600 dark:bg-blue-400/10 dark:text-blue-400 font-medium'
-                  : 'text-gray-600 dark:text-gray-400 hover:bg-black/5 dark:hover:bg-white/5'
+                  ? 'bg-primary/10 text-primary font-medium'
+                  : 'text-foreground/70 hover:bg-foreground/5 hover:text-foreground'
               }`}
             >
               <Icon size={20} className="shrink-0" />
@@ -77,7 +77,7 @@ export default function Sidebar({ email }: { email?: string }) {
       <div className="p-4 flex flex-col gap-2">
         <TactileButton
           onClick={toggleTheme}
-          className="flex items-center gap-3 px-4 py-3 rounded-full text-gray-600 dark:text-gray-400 hover:bg-black/5 dark:hover:bg-white/5 transition-colors duration-200 w-full bg-transparent"
+          className="flex items-center gap-3 px-4 py-3 rounded-full text-foreground/70 hover:bg-foreground/5 transition-colors duration-200 w-full bg-transparent"
           aria-label={theme === 'charcoal' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
         >
           {theme === 'charcoal' ? <Sun size={20} className="shrink-0" /> : <Moon size={20} className="shrink-0" />}
@@ -86,7 +86,7 @@ export default function Sidebar({ email }: { email?: string }) {
           )}
         </TactileButton>
         {isSidebarOpen && email && (
-          <div className="px-4 py-2 text-xs font-mono text-gray-500 dark:text-gray-400 truncate">
+          <div className="px-4 py-2 text-xs font-mono text-foreground/50 truncate">
             {email}
           </div>
         )}

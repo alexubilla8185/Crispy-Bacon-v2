@@ -150,7 +150,7 @@ export default function InsightDetailPage({ params }: { params: Promise<{ id: st
   if (isLoading) {
     return (
       <div className="flex-1 flex items-center justify-center p-6">
-        <span className="font-mono text-sm text-gray-500 dark:text-gray-400 animate-pulse">Loading intelligence...</span>
+        <span className="font-mono text-sm text-foreground/70 animate-pulse">Loading intelligence...</span>
       </div>
     );
   }
@@ -159,7 +159,7 @@ export default function InsightDetailPage({ params }: { params: Promise<{ id: st
     return (
       <div className="flex-1 flex flex-col items-center justify-center p-6 text-center">
         <h2 className="text-2xl font-serif font-medium mb-2">Insight Not Found</h2>
-        <p className="text-gray-500 dark:text-gray-400 mb-6">The intelligence you are looking for does not exist or has been deleted.</p>
+        <p className="text-foreground/70 mb-6">The intelligence you are looking for does not exist or has been deleted.</p>
         <Link
           href="/dashboard/files"
           className="flex items-center gap-2 px-6 py-3 rounded-full bg-primary text-primary-foreground hover:opacity-90 transition-opacity font-medium text-sm focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none focus-visible:ring-offset-2 focus-visible:ring-offset-background"
@@ -225,7 +225,7 @@ export default function InsightDetailPage({ params }: { params: Promise<{ id: st
       <div className="mb-8 flex items-center justify-between">
         <Link
           href="/dashboard/files"
-          className="inline-flex items-center gap-2 text-sm font-mono text-gray-500 dark:text-gray-400 hover:text-foreground transition-colors focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+          className="inline-flex items-center gap-2 text-sm font-mono text-foreground/70 hover:text-foreground transition-colors focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none focus-visible:ring-offset-2 focus-visible:ring-offset-background"
         >
           <ArrowLeft className="w-4 h-4" /> Back to Library
         </Link>
@@ -252,10 +252,10 @@ export default function InsightDetailPage({ params }: { params: Promise<{ id: st
           <ActiveUsers documentId={id} />
         </div>
         <div className="flex items-center gap-3 mb-4">
-          <div className="w-10 h-10 rounded-full bg-primary/5 border border-black/10 dark:border-white/10 flex items-center justify-center">
+          <div className="w-10 h-10 rounded-full bg-primary/5 border border-border flex items-center justify-center">
             {isAudio ? <Mic className="w-5 h-5 text-primary" /> : <FileText className="w-5 h-5 text-primary" />}
           </div>
-          <span className="font-mono text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+          <span className="font-mono text-xs text-foreground/70 uppercase tracking-wider">
             {new Date(insight.created_at).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
           </span>
         </div>
@@ -267,7 +267,7 @@ export default function InsightDetailPage({ params }: { params: Promise<{ id: st
         
         {(sentiment || readingTime) && (
           <div className="flex flex-col gap-4 mb-6">
-            <div className="font-mono text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+            <div className="font-mono text-xs text-foreground/70 uppercase tracking-wider">
               {sentiment && <span>{sentiment}</span>}
               {sentiment && readingTime && <span> · </span>}
               {readingTime && <span>{readingTime}</span>}
@@ -278,7 +278,7 @@ export default function InsightDetailPage({ params }: { params: Promise<{ id: st
         {topics && Array.isArray(topics) && topics.length > 0 && (
           <div className="flex flex-wrap gap-2 mb-8">
             {topics.map((topic: string) => (
-              <span key={topic} className="px-4 py-1.5 rounded-full text-sm font-medium bg-black/5 dark:bg-white/5 border border-black/5 dark:border-white/5 hover:bg-black/10 dark:hover:bg-white/10 transition-colors cursor-default">
+              <span key={topic} className="px-4 py-1.5 rounded-full text-sm font-medium bg-foreground/5 border border-border hover:bg-foreground/10 transition-colors cursor-default">
                 {topic}
               </span>
             ))}
@@ -296,32 +296,32 @@ export default function InsightDetailPage({ params }: { params: Promise<{ id: st
         {/* Summary Section */}
         <section>
           {insight.processing_status === 'uploading' || insight.processing_status === 'analyzing' ? (
-            <div className="p-6 md:p-8 rounded-[32px] bg-primary/5 border border-black/10 dark:border-white/10 space-y-8">
+            <div className="p-6 md:p-8 rounded-[32px] bg-primary/5 border border-border space-y-8">
               <div className="space-y-3">
-                <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded-md animate-pulse w-full"></div>
-                <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded-md animate-pulse w-11/12"></div>
-                <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded-md animate-pulse w-4/5"></div>
+                <div className="h-4 bg-foreground/10 rounded-md animate-pulse w-full"></div>
+                <div className="h-4 bg-foreground/10 rounded-md animate-pulse w-11/12"></div>
+                <div className="h-4 bg-foreground/10 rounded-md animate-pulse w-4/5"></div>
               </div>
               
               <div>
-                <h3 className="text-xs font-mono text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3">Highlights</h3>
+                <h3 className="text-xs font-mono text-foreground/70 uppercase tracking-wider mb-3">Highlights</h3>
                 <div className="space-y-3">
-                  <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded-md animate-pulse w-3/4"></div>
-                  <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded-md animate-pulse w-5/6"></div>
-                  <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded-md animate-pulse w-2/3"></div>
+                  <div className="h-4 bg-foreground/10 rounded-md animate-pulse w-3/4"></div>
+                  <div className="h-4 bg-foreground/10 rounded-md animate-pulse w-5/6"></div>
+                  <div className="h-4 bg-foreground/10 rounded-md animate-pulse w-2/3"></div>
                 </div>
               </div>
               
               <div>
-                <h3 className="text-xs font-mono text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3">Action Items</h3>
+                <h3 className="text-xs font-mono text-foreground/70 uppercase tracking-wider mb-3">Action Items</h3>
                 <div className="space-y-3">
                   <div className="flex items-center gap-3">
-                    <div className="w-4 h-4 rounded bg-gray-200 dark:bg-gray-700 animate-pulse"></div>
-                    <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded-md animate-pulse w-1/2"></div>
+                    <div className="w-4 h-4 rounded bg-foreground/10 animate-pulse"></div>
+                    <div className="h-4 bg-foreground/10 rounded-md animate-pulse w-1/2"></div>
                   </div>
                   <div className="flex items-center gap-3">
-                    <div className="w-4 h-4 rounded bg-gray-200 dark:bg-gray-700 animate-pulse"></div>
-                    <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded-md animate-pulse w-2/3"></div>
+                    <div className="w-4 h-4 rounded bg-foreground/10 animate-pulse"></div>
+                    <div className="h-4 bg-foreground/10 rounded-md animate-pulse w-2/3"></div>
                   </div>
                 </div>
               </div>
@@ -341,10 +341,10 @@ export default function InsightDetailPage({ params }: { params: Promise<{ id: st
             </div>
           ) : (
             <div className="space-y-10">
-              <div className="bg-blue-50/50 dark:bg-blue-900/10 rounded-3xl p-6 md:p-8">
+              <div className="bg-primary/5 rounded-3xl p-6 md:p-8">
                 <div className="flex items-center gap-2 mb-4">
-                  <Sparkles className="w-5 h-5 text-blue-500" />
-                  <h2 className="text-sm font-semibold uppercase tracking-wider bg-clip-text text-transparent bg-gradient-to-r from-blue-500 to-purple-500">
+                  <Sparkles className="w-5 h-5 text-primary" />
+                  <h2 className="text-sm font-semibold uppercase tracking-wider text-primary">
                     Executive Summary
                   </h2>
                 </div>
@@ -355,7 +355,7 @@ export default function InsightDetailPage({ params }: { params: Promise<{ id: st
               
               {highlights && Array.isArray(highlights) && highlights.length > 0 && (
                 <div>
-                  <h3 className="text-xs font-mono text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-4">Highlights</h3>
+                  <h3 className="text-xs font-mono text-foreground/70 uppercase tracking-wider mb-4">Highlights</h3>
                   <ul className="list-disc list-outside ml-5 space-y-4 text-foreground/80">
                     {highlights.map((highlight: string) => (
                       <li key={highlight} className="leading-relaxed pl-1">{highlight}</li>
@@ -366,7 +366,7 @@ export default function InsightDetailPage({ params }: { params: Promise<{ id: st
               
               {actionItems && Array.isArray(actionItems) && actionItems.length > 0 && (
                 <div>
-                  <h3 className="text-xs font-mono text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-4">Action Items</h3>
+                  <h3 className="text-xs font-mono text-foreground/70 uppercase tracking-wider mb-4">Action Items</h3>
                   <ul className="space-y-4 text-foreground/80">
                     {actionItems.map((item: string) => (
                       <li key={item} className="flex items-start gap-3">
@@ -386,14 +386,14 @@ export default function InsightDetailPage({ params }: { params: Promise<{ id: st
           <section>
             <button 
               onClick={() => setIsRawTextOpen(!isRawTextOpen)}
-              className="flex items-center gap-2 text-xs font-mono text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-4 hover:text-foreground transition-colors"
+              className="flex items-center gap-2 text-xs font-mono text-foreground/70 uppercase tracking-wider mb-4 hover:text-foreground transition-colors"
             >
               Raw Document Transcript
               <ChevronDown className={`w-4 h-4 transition-transform ${isRawTextOpen ? 'rotate-180' : ''}`} />
             </button>
             {isRawTextOpen && (
-              <div className="p-6 rounded-[24px] bg-background border border-black/10 dark:border-white/10 overflow-x-auto animate-in fade-in slide-in-from-top-2 duration-300">
-                <pre className="font-mono text-xs md:text-sm text-gray-500 dark:text-gray-400 whitespace-pre-wrap break-words">
+              <div className="p-6 rounded-[24px] bg-background border border-border overflow-x-auto animate-in fade-in slide-in-from-top-2 duration-300">
+                <pre className="font-mono text-xs md:text-sm text-foreground/70 whitespace-pre-wrap break-words">
                   {insight.raw_content}
                 </pre>
               </div>
@@ -403,7 +403,7 @@ export default function InsightDetailPage({ params }: { params: Promise<{ id: st
 
         {/* Telemetry Footer */}
         {insight.intelligence?.metadata && (
-          <div className="text-xs text-gray-500 font-mono flex gap-4 mt-8 pt-4 border-t border-gray-200 dark:border-gray-800">
+          <div className="text-xs text-foreground/50 font-mono flex gap-4 mt-8 pt-4 border-t border-border">
             <span>Model: {insight.intelligence.metadata.model}</span>
             <span>|</span>
             <span>Latency: {insight.intelligence.metadata.duration}</span>
@@ -419,13 +419,13 @@ export default function InsightDetailPage({ params }: { params: Promise<{ id: st
 
       {showDeleteModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm">
-          <div className="w-full max-w-md rounded-[32px] bg-background p-6 shadow-2xl border border-black/10 dark:border-white/10">
+          <div className="w-full max-w-md rounded-[32px] bg-background p-6 shadow-2xl border border-border">
             <h2 className="font-serif text-xl mb-4">Delete Intelligence?</h2>
-            <p className="text-gray-500 dark:text-gray-400 mb-6">This action cannot be undone.</p>
+            <p className="text-foreground/70 mb-6">This action cannot be undone.</p>
             <div className="flex justify-end gap-3">
               <button
                 onClick={() => setShowDeleteModal(false)}
-                className="px-4 py-2 rounded-full text-sm font-medium hover:bg-black/5 dark:hover:bg-white/5 transition-colors focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                className="px-4 py-2 rounded-full text-sm font-medium hover:bg-foreground/5 transition-colors focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none focus-visible:ring-offset-2 focus-visible:ring-offset-background"
                 aria-label="Cancel"
               >
                 Cancel

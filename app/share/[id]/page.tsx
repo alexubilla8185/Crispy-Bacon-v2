@@ -17,9 +17,9 @@ export default async function SharedInsightPage({ params }: { params: Promise<{ 
   // Check if expired
   if (link.expires_at && new Date(link.expires_at) < new Date()) {
     return (
-      <div className="max-w-3xl mx-auto p-12 font-sans text-center">
+      <div className="max-w-3xl mx-auto p-12 font-sans text-center bg-background text-foreground min-h-screen flex flex-col items-center justify-center">
         <h1 className="font-serif text-4xl mb-4">Expired</h1>
-        <p className="text-gray-600 dark:text-gray-300">This intelligence briefing has expired or does not exist.</p>
+        <p className="text-foreground/70">This intelligence briefing has expired or does not exist.</p>
       </div>
     );
   }
@@ -39,17 +39,17 @@ export default async function SharedInsightPage({ params }: { params: Promise<{ 
       <div className="space-y-8">
         <section>
           <h2 className="font-serif text-xl mb-4">Summary</h2>
-          <p className="text-gray-600 dark:text-gray-300 leading-relaxed">{insight.intelligence.summary}</p>
+          <p className="text-foreground/80 leading-relaxed">{insight.intelligence.summary}</p>
         </section>
         <section>
           <h2 className="font-serif text-xl mb-4">Highlights</h2>
-          <ul className="list-disc pl-5 space-y-2">
+          <ul className="list-disc pl-5 space-y-2 text-foreground/80">
             {insight.intelligence.highlights.map((h: string, i: number) => <li key={i}>{h}</li>)}
           </ul>
         </section>
         <section>
           <h2 className="font-serif text-xl mb-4">Action Items</h2>
-          <ul className="list-disc pl-5 space-y-2">
+          <ul className="list-disc pl-5 space-y-2 text-foreground/80">
             {insight.intelligence.action_items.map((a: string, i: number) => <li key={i}>{a}</li>)}
           </ul>
         </section>

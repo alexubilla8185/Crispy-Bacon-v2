@@ -4,14 +4,17 @@ import { useRef, useEffect, useState } from 'react';
 import { UploadCloud, Mic, Square, FileText, Activity, Zap, AlertCircle, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import { useFileDrop } from '@/hooks/useFileDrop';
-import { useMicrophone } from '@/hooks/useMicrophone';
+import { useAudioRecorder } from '@/hooks/useAudioRecorder';
+import { RecordModal } from '@/components/ui/RecordModal';
+import { GoogleDrivePicker } from '@/components/ui/GoogleDrivePicker';
 import { TactileButton } from '@/components/ui/TactileButton';
 import { getAllInsights } from '@/lib/storage/localDbService';
 import { Insight } from '@/lib/schemas';
 
 export default function HubPage() {
   const { isDragging, onDragEnter, onDragOver, onDragLeave, onDrop, handleFileInput } = useFileDrop();
-  const { isRecording, recordingTime, startRecording, stopRecording } = useMicrophone();
+  const { isRecording, recordingTime, startMicRecording, startScreenAudioRecording, stopRecording } = useAudioRecorder();
+  const [isRecordModalOpen, setIsRecordModalOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [insights, setInsights] = useState<Insight[]>([]);
@@ -49,7 +52,7 @@ export default function HubPage() {
         <h1 className="text-3xl md:text-4xl font-serif font-medium tracking-tight mb-2">
           Overview
         </h1>
-        <p className="text-gray-500 dark:text-gray-400 font-sans text-sm md:text-base">
+        <p className="text-foreground/70 font-sans text-sm md:text-base">
           Drop files, audio, and notes to generate instant AI summaries.
         </p>
       </header>
@@ -62,10 +65,10 @@ export default function HubPage() {
           onDragLeave={onDragLeave}
           onDrop={onDrop}
           onClick={() => fileInputRef.current?.click()}
-          className={`w-full py-12 px-6 md:px-12 rounded-[32px] transition-transform duration-300 hover:scale-[1.01] flex flex-col md:flex-row items-center justify-between gap-6 group relative cursor-pointer overflow-hidden !outline-none focus:!outline-none focus-visible:!outline-none focus-visible:!ring-0 focus:!ring-0 ${
+          className={`w-full py-12 px-6 md:px-12 rounded-[32px] transition-transform duration-300 hover:scale-[1.01] flex flex-col md:flex-row items-center justify-between gap-6 group relative cursor-pointer overflow-hidden !outline-none focus:!outline-none focus-visible:!outline-none focus-visible:!ring-0 focus:!ring-0 border-2 ${
             isDragging
-              ? 'bg-primary/20 scale-[1.01]'
-              : 'bg-gradient-to-br from-blue-50/50 to-purple-50/50 dark:from-blue-900/10 dark:to-purple-900/10'
+              ? 'bg-primary/10 border-primary/50 scale-[1.01]'
+              : 'bg-surface border-border hover:bg-foreground/5'
           }`}
         >
           <input
@@ -77,10 +80,10 @@ export default function HubPage() {
           />
           <div className="flex items-center gap-6 relative z-10">
             <div
-              className={`w-16 h-16 rounded-full bg-white/80 dark:bg-black/50 backdrop-blur-sm flex items-center justify-center transition-transform shadow-sm shrink-0 ${
+              className={`w-16 h-16 rounded-full bg-background flex items-center justify-center transition-transform shadow-sm shrink-0 ${
                 isDragging
                   ? 'scale-110 text-primary'
-                  : 'group-hover:scale-110 text-gray-500 dark:text-gray-400 group-hover:text-primary'
+                  : 'group-hover:scale-110 text-foreground/50 group-hover:text-primary'
               }`}
             >
               <UploadCloud className="w-7 h-7" />
@@ -89,13 +92,14 @@ export default function HubPage() {
               <h2 className="text-xl font-serif font-medium mb-1 text-foreground">
                 {isDragging ? 'Drop to Save Locally' : 'Drop Intelligence Here'}
               </h2>
-              <p className="text-sm font-sans text-gray-500 dark:text-gray-400 max-w-sm">
+              <p className="text-sm font-sans text-foreground/70 max-w-sm">
                 Markdown, TXT, or Native Audio.
               </p>
             </div>
           </div>
 
-          <div className="flex items-center justify-center z-10 shrink-0">
+          <div className="flex items-center gap-4 justify-center z-10 shrink-0">
+            <GoogleDrivePicker />
             {isRecording ? (
               <TactileButton
                 onClick={(e) => {
@@ -111,17 +115,24 @@ export default function HubPage() {
               <TactileButton
                 onClick={(e) => {
                   e.stopPropagation();
-                  startRecording();
+                  setIsRecordModalOpen(true);
                 }}
-                className="flex items-center gap-3 px-6 py-3 rounded-full bg-surface text-foreground hover:bg-black/5 dark:hover:bg-white/5 transition-colors shadow-sm cursor-pointer"
+                className="flex items-center gap-3 px-6 py-3 rounded-full bg-background text-foreground hover:bg-foreground/5 transition-colors shadow-sm cursor-pointer"
               >
                 <Mic className="w-4 h-4" />
-                <span className="font-sans font-medium text-sm">Record Voice Note</span>
+                <span className="font-sans font-medium text-sm">Smart Record</span>
               </TactileButton>
             )}
           </div>
         </div>
       </div>
+
+      <RecordModal
+        isOpen={isRecordModalOpen}
+        onClose={() => setIsRecordModalOpen(false)}
+        onStartMic={startMicRecording}
+        onStartScreen={startScreenAudioRecording}
+      />
 
       {/* M3 Metric Cards (Middle Section) */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 w-full">
@@ -129,21 +140,21 @@ export default function HubPage() {
           <div className="absolute top-0 right-0 p-6 opacity-10 group-hover:opacity-20 transition-opacity">
             <FileText className="w-16 h-16" />
           </div>
-          <p className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2 relative z-10">Files Crunched</p>
+          <p className="text-sm font-medium text-foreground/70 mb-2 relative z-10">Files Crunched</p>
           <p className="text-4xl font-serif text-foreground relative z-10">{insights.length}</p>
         </div>
         <div className="bg-surface rounded-[24px] p-6 shadow-sm flex flex-col justify-center relative overflow-hidden group">
           <div className="absolute top-0 right-0 p-6 opacity-10 group-hover:opacity-20 transition-opacity">
             <Activity className="w-16 h-16" />
           </div>
-          <p className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2 relative z-10">Action Items</p>
+          <p className="text-sm font-medium text-foreground/70 mb-2 relative z-10">Action Items</p>
           <p className="text-4xl font-serif text-foreground relative z-10">{allActionItems.length}</p>
         </div>
         <div className="bg-surface rounded-[24px] p-6 shadow-sm flex flex-col justify-center relative overflow-hidden group">
           <div className="absolute top-0 right-0 p-6 opacity-10 group-hover:opacity-20 transition-opacity">
             <Zap className="w-16 h-16" />
           </div>
-          <p className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2 relative z-10">Fast Insights</p>
+          <p className="text-sm font-medium text-foreground/70 mb-2 relative z-10">Fast Insights</p>
           <p className="text-4xl font-serif text-foreground relative z-10">{insights.filter(i => i.processing_status === 'completed').length}</p>
         </div>
       </div>
@@ -153,8 +164,8 @@ export default function HubPage() {
         <h2 className="font-serif text-2xl mb-6">Recent Insights</h2>
         
         {insights.length === 0 ? (
-          <div className="py-12 text-center border border-dashed border-black/10 dark:border-white/10 rounded-[24px] bg-black/5 dark:bg-white/5">
-            <p className="text-gray-500 dark:text-gray-400 font-sans text-sm">
+          <div className="py-12 text-center border border-dashed border-border rounded-[24px] bg-foreground/5">
+            <p className="text-foreground/70 font-sans text-sm">
               No files yet. Import a document or record audio to begin.
             </p>
           </div>
@@ -164,19 +175,19 @@ export default function HubPage() {
               <Link 
                 key={insight.id}
                 href={`/dashboard/files/${insight.id}`}
-                className="bg-surface rounded-[24px] p-6 shadow-sm hover:shadow-md transition-all hover:-translate-y-1 flex flex-col gap-2 group border border-transparent hover:border-black/5 dark:hover:border-white/5"
+                className="bg-surface rounded-[24px] p-6 shadow-sm hover:shadow-md transition-all hover:-translate-y-1 flex flex-col gap-2 group border border-transparent hover:border-border"
               >
                 <div className="flex items-start justify-between gap-2">
-                  <span className="text-xs text-gray-500 font-medium tracking-wide uppercase">
+                  <span className="text-xs text-foreground/70 font-medium tracking-wide uppercase">
                     {new Date(insight.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                   </span>
                   {insight.processing_status === 'failed' && <AlertCircle className="w-4 h-4 text-red-500" />}
-                  {(insight.processing_status === 'analyzing' || insight.processing_status === 'uploading') && <Loader2 className="w-4 h-4 text-blue-500 animate-spin" />}
+                  {(insight.processing_status === 'analyzing' || insight.processing_status === 'uploading') && <Loader2 className="w-4 h-4 text-primary animate-spin" />}
                 </div>
                 <h3 className="font-serif text-lg font-medium truncate group-hover:text-primary transition-colors">
                   {insight.title || 'Untitled Document'}
                 </h3>
-                <p className="text-sm text-gray-500 dark:text-gray-400 line-clamp-2 mt-2 leading-relaxed">
+                <p className="text-sm text-foreground/70 line-clamp-2 mt-2 leading-relaxed">
                   {insight.intelligence?.summary || 'Processing intelligence...'}
                 </p>
               </Link>

@@ -7,7 +7,7 @@ import { createClient } from '@/lib/supabase/client';
 import { useUIStore } from '@/lib/store';
 import { unstable_batchedUpdates } from 'react-dom';
 
-export function useMicrophone() {
+export function useAudioRecorder() {
   const [isRecording, setIsRecording] = useState(false);
   const [recordingTime, setRecordingTime] = useState(0);
   const router = useRouter();
@@ -36,11 +36,37 @@ export function useMicrophone() {
     }
   }, []);
 
-  const startRecording = useCallback(async () => {
-    try {
-      audioChunksRef.current = [];
-      setRecordingTime(0);
+  const startRecordingWithStream = useCallback(async (stream: MediaStream) => {
+    audioChunksRef.current = [];
+    setRecordingTime(0);
 
+    mediaStreamRef.current = stream;
+
+    const mimeType = MediaRecorder.isTypeSupported('audio/webm')
+      ? 'audio/webm'
+      : MediaRecorder.isTypeSupported('audio/mp4')
+        ? 'audio/mp4'
+        : '';
+
+    const mediaRecorder = new MediaRecorder(stream, mimeType ? { mimeType } : undefined);
+    mediaRecorderRef.current = mediaRecorder;
+
+    mediaRecorder.ondataavailable = (event) => {
+      if (event.data.size > 0) {
+        audioChunksRef.current.push(event.data);
+      }
+    };
+
+    mediaRecorder.start();
+    setIsRecording(true);
+
+    timerIntervalRef.current = setInterval(() => {
+      setRecordingTime((prev) => prev + 1);
+    }, 1000);
+  }, []);
+
+  const startMicRecording = useCallback(async () => {
+    try {
       const stream = await navigator.mediaDevices.getUserMedia({
         audio: {
           echoCancellation: true,
@@ -48,35 +74,31 @@ export function useMicrophone() {
           autoGainControl: true,
         },
       });
-
-      mediaStreamRef.current = stream;
-
-      const mimeType = MediaRecorder.isTypeSupported('audio/webm')
-        ? 'audio/webm'
-        : MediaRecorder.isTypeSupported('audio/mp4')
-          ? 'audio/mp4'
-          : '';
-
-      const mediaRecorder = new MediaRecorder(stream, mimeType ? { mimeType } : undefined);
-      mediaRecorderRef.current = mediaRecorder;
-
-      mediaRecorder.ondataavailable = (event) => {
-        if (event.data.size > 0) {
-          audioChunksRef.current.push(event.data);
-        }
-      };
-
-      mediaRecorder.start();
-      setIsRecording(true);
-
-      timerIntervalRef.current = setInterval(() => {
-        setRecordingTime((prev) => prev + 1);
-      }, 1000);
+      await startRecordingWithStream(stream);
     } catch (error) {
-      console.error('Failed to start recording:', error);
+      console.error('Failed to start mic recording:', error);
       cleanup();
     }
-  }, [cleanup]);
+  }, [cleanup, startRecordingWithStream]);
+
+  const startScreenAudioRecording = useCallback(async () => {
+    try {
+      const stream = await navigator.mediaDevices.getDisplayMedia({
+        video: true,
+        audio: true,
+      });
+
+      const audioTrack = stream.getAudioTracks()[0];
+      const videoTrack = stream.getVideoTracks()[0];
+      if (videoTrack) videoTrack.stop(); // Nuke the video, keep the audio
+      const audioOnlyStream = new MediaStream([audioTrack]);
+
+      await startRecordingWithStream(audioOnlyStream);
+    } catch (error) {
+      console.error('Failed to start screen audio recording:', error);
+      cleanup();
+    }
+  }, [cleanup, startRecordingWithStream]);
 
   const stopRecording = useCallback(async () => {
     setIsRecording(false);
@@ -279,7 +301,8 @@ export function useMicrophone() {
   return {
     isRecording,
     recordingTime,
-    startRecording,
+    startMicRecording,
+    startScreenAudioRecording,
     stopRecording,
   };
 }

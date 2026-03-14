@@ -28,7 +28,7 @@ export function GoogleSignInButton() {
     <TactileButton
       onClick={handleSignIn}
       disabled={loading}
-      className="w-full flex items-center justify-center gap-3 px-6 py-4 rounded-full bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 transition-all text-lg font-medium"
+      className="w-full flex items-center justify-center gap-3 px-6 py-4 rounded-full bg-foreground/5 hover:bg-foreground/10 transition-all text-lg font-medium"
     >
       {loading ? (
         <span className="font-sans font-medium">Authenticating...</span>
