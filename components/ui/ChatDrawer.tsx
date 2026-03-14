@@ -2,6 +2,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { X, Send, Sparkles } from 'lucide-react';
+import ReactMarkdown from 'react-markdown';
 import { useDocumentChat } from '@/hooks/useDocumentChat';
 
 interface ChatDrawerProps {
@@ -99,7 +100,15 @@ export function ChatDrawer({ isOpen, onClose, documentContext }: ChatDrawerProps
                   }`}
                 >
                   {msg.role === 'model' && <Sparkles className="w-3 h-3 inline mr-2 text-primary" />}
-                  <p className="inline leading-relaxed whitespace-pre-wrap">{msg.text}</p>
+                  {msg.role === 'model' ? (
+                    <div className="[&>p]:mb-2 [&>p:last-child]:mb-0 [&>ul]:list-disc [&>ul]:ml-4 [&>ul]:mb-2 [&>ul>li]:mb-1 [&>strong]:font-semibold">
+                      <ReactMarkdown>
+                        {msg.text}
+                      </ReactMarkdown>
+                    </div>
+                  ) : (
+                    <p className="inline leading-relaxed whitespace-pre-wrap">{msg.text}</p>
+                  )}
                 </div>
               </div>
             ))
