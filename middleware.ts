@@ -2,7 +2,7 @@ import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 
 export async function middleware(request: NextRequest) {
-  if (request.cookies.has('crispy_dev_bypass')) {
+  if (request.cookies.has('crunch_dev_bypass')) {
     return NextResponse.next();
   }
 
