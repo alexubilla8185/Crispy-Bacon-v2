@@ -251,7 +251,7 @@ export default function FilesPage() {
                     <div className="w-12 h-12 rounded-full bg-background border border-border flex items-center justify-center mb-2">
                       <FileText className="w-6 h-6 text-primary" />
                     </div>
-                    <h3 className="font-serif text-lg text-foreground truncate">{insight.title || insight.summary?.substring(0, 30) || 'Processing Intelligence...'}</h3>
+                    <h3 className="font-serif text-lg text-foreground truncate">{insight.title || insight.intelligence?.summary?.substring(0, 30) || 'Processing Intelligence...'}</h3>
                     <p className="text-xs text-foreground/70">{new Date(insight.created_at).toLocaleDateString()}</p>
                   </div>
                 ) : (
@@ -260,7 +260,7 @@ export default function FilesPage() {
                       <FileText className="w-5 h-5 text-primary" />
                     </div>
                     <div>
-                      <h3 className="font-serif text-lg text-foreground truncate">{insight.title || insight.summary?.substring(0, 30) || 'Processing Intelligence...'}</h3>
+                      <h3 className="font-serif text-lg text-foreground truncate">{insight.title || insight.intelligence?.summary?.substring(0, 30) || 'Processing Intelligence...'}</h3>
                       <p className="text-sm text-foreground/70">{new Date(insight.created_at).toLocaleDateString()}</p>
                     </div>
                   </div>
