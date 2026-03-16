@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { getAllInsights, deleteInsight } from '@/lib/storage/localDbService';
 import { Insight } from '@/lib/schemas';
 import { Mic, FileText, File as FileIcon, ArrowRight, Trash, Search, LayoutGrid, List, CheckSquare, Square } from 'lucide-react';
@@ -51,30 +51,57 @@ export default function FilesPage() {
   const insights = useMemo(() => {
     const mergedMap = new Map<string, Insight>();
 
-    localInsights.forEach(local => {
-      mergedMap.set(local.id, local as Insight);
+    supabaseInsights.forEach(remote => {
+      mergedMap.set(remote.id, remote as Insight);
     });
 
-    supabaseInsights.forEach(remote => {
-      if (mergedMap.has(remote.id)) {
-        const local = mergedMap.get(remote.id)!;
+    localInsights.forEach(local => {
+      if (mergedMap.has(local.id)) {
+        const remote = mergedMap.get(local.id)!;
         const finalStatus = shouldUpdateStatus(local.processing_status, remote.processing_status)
           ? remote.processing_status
           : local.processing_status;
         
-        mergedMap.set(remote.id, {
+        mergedMap.set(local.id, {
           ...local,
           ...remote,
           title: remote.title || local.title,
           processing_status: finalStatus || local.processing_status,
         } as Insight);
       } else {
-        mergedMap.set(remote.id, remote as Insight);
+        mergedMap.set(local.id, local as Insight);
       }
     });
 
     return Array.from(mergedMap.values());
   }, [localInsights, supabaseInsights]);
+
+  useEffect(() => {
+    if (isLocalLoading || isSupabaseLoading) return;
+
+    const purgeZombies = async () => {
+      const supabaseIds = new Set(supabaseInsights.map(i => i.id));
+      let purged = false;
+
+      for (const local of localInsights) {
+        if (
+          local.processing_status !== 'local' && 
+          local.processing_status !== 'uploading' && 
+          !supabaseIds.has(local.id)
+        ) {
+          console.log(`Purging zombie insight: ${local.id}`);
+          await deleteInsight(local.id);
+          purged = true;
+        }
+      }
+
+      if (purged) {
+        queryClient.invalidateQueries({ queryKey: ['localInsights'] });
+      }
+    };
+
+    purgeZombies();
+  }, [localInsights, supabaseInsights, isLocalLoading, isSupabaseLoading, queryClient]);
 
   const filteredInsights = useMemo(() => {
     let result = insights.filter(insight => 
@@ -224,7 +251,7 @@ export default function FilesPage() {
                     <div className="w-12 h-12 rounded-full bg-background border border-border flex items-center justify-center mb-2">
                       <FileText className="w-6 h-6 text-primary" />
                     </div>
-                    <h3 className="font-serif text-lg text-foreground truncate">{insight.title || 'Processing Intelligence...'}</h3>
+                    <h3 className="font-serif text-lg text-foreground truncate">{insight.title || insight.summary?.substring(0, 30) || 'Processing Intelligence...'}</h3>
                     <p className="text-xs text-foreground/70">{new Date(insight.created_at).toLocaleDateString()}</p>
                   </div>
                 ) : (
@@ -233,7 +260,7 @@ export default function FilesPage() {
                       <FileText className="w-5 h-5 text-primary" />
                     </div>
                     <div>
-                      <h3 className="font-serif text-lg text-foreground truncate">{insight.title || 'Processing Intelligence...'}</h3>
+                      <h3 className="font-serif text-lg text-foreground truncate">{insight.title || insight.summary?.substring(0, 30) || 'Processing Intelligence...'}</h3>
                       <p className="text-sm text-foreground/70">{new Date(insight.created_at).toLocaleDateString()}</p>
                     </div>
                   </div>
