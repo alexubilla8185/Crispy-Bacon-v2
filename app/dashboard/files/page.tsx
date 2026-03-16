@@ -3,7 +3,7 @@
 import { useState, useMemo, useEffect } from 'react';
 import { getAllInsights, deleteInsight } from '@/lib/storage/localDbService';
 import { Insight } from '@/lib/schemas';
-import { Mic, FileText, File as FileIcon, ArrowRight, Trash, Search, LayoutGrid, List, CheckSquare, Square } from 'lucide-react';
+import { Mic, FileText, File as FileIcon, ArrowRight, Trash, Search, LayoutGrid, List, CheckSquare, Square, AlertCircle, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useUIStore } from '@/lib/store';
@@ -25,6 +25,11 @@ export default function FilesPage() {
   const router = useRouter();
   const supabase = createClient();
   const queryClient = useQueryClient();
+
+  const getIcon = (insight: Insight, className: string) => {
+    const isAudio = insight.title?.toLowerCase().includes('audio') || (insight.raw_content instanceof Blob && insight.raw_content.type.startsWith('audio/'));
+    return isAudio ? <Mic className={className} /> : <FileText className={className} />;
+  };
 
   useInsightSubscription();
 
@@ -230,43 +235,67 @@ export default function FilesPage() {
           </p>
         </div>
       ) : (
-        <div className={viewMode === 'grid' ? 'grid grid-cols-2 md:grid-cols-3 gap-4' : 'flex flex-col'}>
+        <div className={viewMode === 'grid' ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4' : 'flex flex-col gap-4'}>
           {filteredInsights.map((insight) => (
-            <div
-              key={insight.id}
-              className={`bg-surface rounded-2xl p-4 shadow-sm border ${selectedIds.has(insight.id) ? 'border-primary' : 'border-transparent'} transition-all group relative`}
-            >
-              <button 
-                onClick={() => toggleSelection(insight.id)}
-                className="absolute top-2 left-2 z-10 p-1 rounded-full bg-background/50 hover:bg-background"
-              >
-                {selectedIds.has(insight.id) ? <CheckSquare className="w-5 h-5 text-primary fill-primary/20" /> : <Square className="w-5 h-5 text-foreground/50" />}
-              </button>
-              <div 
+            viewMode === 'grid' ? (
+              <div
+                key={insight.id}
+                className={`bg-surface rounded-[24px] p-6 shadow-sm hover:shadow-md transition-all hover:-translate-y-1 flex flex-col gap-2 group border ${selectedIds.has(insight.id) ? 'border-primary' : 'border-transparent'} relative cursor-pointer`}
                 onClick={() => router.push(`/dashboard/files/${insight.id}`)}
-                className="cursor-pointer"
               >
-                {viewMode === 'grid' ? (
-                  <div className="flex flex-col gap-2">
-                    <div className="w-12 h-12 rounded-full bg-background border border-border flex items-center justify-center mb-2">
-                      <FileText className="w-6 h-6 text-primary" />
-                    </div>
-                    <h3 className="font-serif text-lg text-foreground truncate">{insight.title || insight.intelligence?.summary?.substring(0, 30) || 'Processing Intelligence...'}</h3>
-                    <p className="text-xs text-foreground/70">{new Date(insight.created_at).toLocaleDateString()}</p>
-                  </div>
-                ) : (
+                <button 
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    toggleSelection(insight.id);
+                  }}
+                  className="absolute top-4 right-4 z-10 p-1 rounded-full bg-background/50 hover:bg-background"
+                >
+                  {selectedIds.has(insight.id) ? <CheckSquare className="w-5 h-5 text-primary fill-primary/20" /> : <Square className="w-5 h-5 text-foreground/50" />}
+                </button>
+                <div className="flex items-start justify-between gap-2 pr-8">
+                  <span className="text-xs text-foreground/70 font-medium tracking-wide uppercase">
+                    {new Date(insight.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                  </span>
+                  {insight.processing_status === 'failed' && <AlertCircle className="w-4 h-4 text-red-500" />}
+                  {(insight.processing_status === 'analyzing' || insight.processing_status === 'uploading') && <Loader2 className="w-4 h-4 text-primary animate-spin" />}
+                </div>
+                <div className="flex items-center gap-3 mt-1">
+                  {getIcon(insight, "w-5 h-5 text-primary shrink-0")}
+                  <h3 className="font-serif text-lg font-medium truncate group-hover:text-primary transition-colors">
+                    {insight.title || insight.intelligence?.summary?.substring(0, 30) || 'Processing Intelligence...'}
+                  </h3>
+                </div>
+                <p className="text-sm text-foreground/70 line-clamp-2 mt-2 leading-relaxed">
+                  {insight.intelligence?.summary || 'Processing intelligence...'}
+                </p>
+              </div>
+            ) : (
+              <div
+                key={insight.id}
+                className={`bg-surface rounded-2xl p-4 shadow-sm border ${selectedIds.has(insight.id) ? 'border-primary' : 'border-transparent'} transition-all group relative`}
+              >
+                <button 
+                  onClick={() => toggleSelection(insight.id)}
+                  className="absolute top-2 left-2 z-10 p-1 rounded-full bg-background/50 hover:bg-background"
+                >
+                  {selectedIds.has(insight.id) ? <CheckSquare className="w-5 h-5 text-primary fill-primary/20" /> : <Square className="w-5 h-5 text-foreground/50" />}
+                </button>
+                <div 
+                  onClick={() => router.push(`/dashboard/files/${insight.id}`)}
+                  className="cursor-pointer"
+                >
                   <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 rounded-full bg-background border border-border flex items-center justify-center">
-                      <FileText className="w-5 h-5 text-primary" />
+                    <div className="w-12 h-12 rounded-full bg-background border border-border flex items-center justify-center shrink-0">
+                      {getIcon(insight, "w-5 h-5 text-primary")}
                     </div>
                     <div>
                       <h3 className="font-serif text-lg text-foreground truncate">{insight.title || insight.intelligence?.summary?.substring(0, 30) || 'Processing Intelligence...'}</h3>
                       <p className="text-sm text-foreground/70">{new Date(insight.created_at).toLocaleDateString()}</p>
                     </div>
                   </div>
-                )}
+                </div>
               </div>
-            </div>
+            )
           ))}
         </div>
       )}

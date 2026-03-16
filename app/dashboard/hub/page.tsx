@@ -1,7 +1,7 @@
 'use client';
 
 import { useRef, useState, useMemo } from 'react';
-import { UploadCloud, Mic, Square, FileText, Activity, Zap, AlertCircle, Loader2 } from 'lucide-react';
+import { UploadCloud, Mic, Square, FileText, Activity, Zap, AlertCircle, Loader2, Network } from 'lucide-react';
 import Link from 'next/link';
 import { useFileDrop } from '@/hooks/useFileDrop';
 import { useAudioRecorder } from '@/hooks/useAudioRecorder';
@@ -67,18 +67,24 @@ export default function HubPage() {
   }, [localInsights, supabaseInsights]);
 
   const metrics = useMemo(() => {
-    let actionPipeline = 0;
-    let intelligenceDensity = 0;
+    let voiceNotes = 0;
+    const topicsSet = new Set<string>();
 
     insights.forEach(insight => {
-      actionPipeline += insight.intelligence?.action_items?.length || 0;
-      intelligenceDensity += (insight.intelligence?.highlights?.length || 0) + (insight.intelligence?.topics?.length || 0);
+      const isAudio = insight.title?.toLowerCase().includes('audio') || (insight.raw_content instanceof Blob && insight.raw_content.type.startsWith('audio/'));
+      if (isAudio) {
+        voiceNotes++;
+      }
+      
+      if (insight.intelligence?.topics) {
+        insight.intelligence.topics.forEach(topic => topicsSet.add(topic));
+      }
     });
 
     return {
       knowledgeVault: insights.length,
-      actionPipeline,
-      intelligenceDensity
+      voiceNotes,
+      knowledgeMap: topicsSet.size
     };
   }, [insights]);
 
@@ -189,17 +195,17 @@ export default function HubPage() {
         </div>
         <div className="bg-blue-500/10 text-blue-600 dark:text-blue-400 rounded-[24px] p-6 shadow-sm flex flex-col justify-center relative overflow-hidden group border border-blue-500/20">
           <div className="absolute top-0 right-0 p-6 opacity-10 group-hover:opacity-20 transition-opacity">
-            <Activity className="w-16 h-16" />
+            <Mic className="w-16 h-16" />
           </div>
-          <p className="text-sm font-medium mb-2 relative z-10 opacity-80">Action Pipeline</p>
-          <p className="text-4xl font-serif relative z-10">{metrics.actionPipeline}</p>
+          <p className="text-sm font-medium mb-2 relative z-10 opacity-80">Voice Notes</p>
+          <p className="text-4xl font-serif relative z-10">{metrics.voiceNotes}</p>
         </div>
         <div className="bg-purple-500/10 text-purple-600 dark:text-purple-400 rounded-[24px] p-6 shadow-sm flex flex-col justify-center relative overflow-hidden group border border-purple-500/20">
           <div className="absolute top-0 right-0 p-6 opacity-10 group-hover:opacity-20 transition-opacity">
-            <Zap className="w-16 h-16" />
+            <Network className="w-16 h-16" />
           </div>
-          <p className="text-sm font-medium mb-2 relative z-10 opacity-80">Intelligence Density</p>
-          <p className="text-4xl font-serif relative z-10">{metrics.intelligenceDensity}</p>
+          <p className="text-sm font-medium mb-2 relative z-10 opacity-80">Knowledge Map</p>
+          <p className="text-4xl font-serif relative z-10">{metrics.knowledgeMap}</p>
         </div>
       </div>
 
