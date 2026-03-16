@@ -16,6 +16,7 @@ import { motion, AnimatePresence } from 'motion/react';
 
 export default function FilesPage() {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [viewMode, setViewMode] = useState<'list' | 'grid'>('list');
   const [sortBy, setSortBy] = useState<'newest' | 'oldest' | 'az'>('newest');
   const [filterType, setFilterType] = useState<'all' | 'audio' | 'documents'>('all');
@@ -48,18 +49,31 @@ export default function FilesPage() {
   const isLoading = isLocalLoading || isSupabaseLoading;
 
   const insights = useMemo(() => {
-    return localInsights.map(local => {
-      const remote = supabaseInsights.find(r => r.id === local.id);
-      const finalStatus = shouldUpdateStatus(local.processing_status, remote?.processing_status)
-        ? remote?.processing_status
-        : local.processing_status;
-      return {
-        ...local,
-        ...remote,
-        title: remote?.title || local.title,
-        processing_status: finalStatus || local.processing_status,
-      } as Insight;
+    const mergedMap = new Map<string, Insight>();
+
+    localInsights.forEach(local => {
+      mergedMap.set(local.id, local as Insight);
     });
+
+    supabaseInsights.forEach(remote => {
+      if (mergedMap.has(remote.id)) {
+        const local = mergedMap.get(remote.id)!;
+        const finalStatus = shouldUpdateStatus(local.processing_status, remote.processing_status)
+          ? remote.processing_status
+          : local.processing_status;
+        
+        mergedMap.set(remote.id, {
+          ...local,
+          ...remote,
+          title: remote.title || local.title,
+          processing_status: finalStatus || local.processing_status,
+        } as Insight);
+      } else {
+        mergedMap.set(remote.id, remote as Insight);
+      }
+    });
+
+    return Array.from(mergedMap.values());
   }, [localInsights, supabaseInsights]);
 
   const filteredInsights = useMemo(() => {
@@ -117,8 +131,11 @@ export default function FilesPage() {
       queryClient.removeQueries({ queryKey: ['supabaseInsight', id] });
     }
 
+    await queryClient.invalidateQueries();
+
     showToast(`Deleted ${selectedIds.size} items`, 'info');
     setSelectedIds(new Set());
+    setIsDeleteModalOpen(false);
   };
 
   return (
@@ -164,8 +181,8 @@ export default function FilesPage() {
                 <option value="oldest">Oldest First</option>
                 <option value="az">Alphabetical (A-Z)</option>
               </select>
-              <button onClick={() => setViewMode('list')} className={`p-2 rounded-full ${viewMode === 'list' ? 'bg-surface' : ''}`}><List className="w-5 h-5" /></button>
-              <button onClick={() => setViewMode('grid')} className={`p-2 rounded-full ${viewMode === 'grid' ? 'bg-surface' : ''}`}><LayoutGrid className="w-5 h-5" /></button>
+              <button onClick={() => setViewMode('list')} className={`p-2 rounded-full transition-colors ${viewMode === 'list' ? 'bg-primary text-primary-foreground' : 'bg-surface hover:bg-foreground/5'}`}><List className="w-5 h-5" /></button>
+              <button onClick={() => setViewMode('grid')} className={`p-2 rounded-full transition-colors ${viewMode === 'grid' ? 'bg-primary text-primary-foreground' : 'bg-surface hover:bg-foreground/5'}`}><LayoutGrid className="w-5 h-5" /></button>
             </div>
           </div>
         </div>
@@ -196,7 +213,7 @@ export default function FilesPage() {
                 onClick={() => toggleSelection(insight.id)}
                 className="absolute top-2 left-2 z-10 p-1 rounded-full bg-background/50 hover:bg-background"
               >
-                {selectedIds.has(insight.id) ? <CheckSquare className="w-5 h-5 text-primary" /> : <Square className="w-5 h-5 text-foreground/50" />}
+                {selectedIds.has(insight.id) ? <CheckSquare className="w-5 h-5 text-primary fill-primary/20" /> : <Square className="w-5 h-5 text-foreground/50" />}
               </button>
               <div 
                 onClick={() => router.push(`/dashboard/files/${insight.id}`)}
@@ -207,7 +224,7 @@ export default function FilesPage() {
                     <div className="w-12 h-12 rounded-full bg-background border border-border flex items-center justify-center mb-2">
                       <FileText className="w-6 h-6 text-primary" />
                     </div>
-                    <h3 className="font-serif text-lg text-foreground truncate">{insight.title || 'Untitled Document'}</h3>
+                    <h3 className="font-serif text-lg text-foreground truncate">{insight.title || 'Processing Intelligence...'}</h3>
                     <p className="text-xs text-foreground/70">{new Date(insight.created_at).toLocaleDateString()}</p>
                   </div>
                 ) : (
@@ -216,7 +233,7 @@ export default function FilesPage() {
                       <FileText className="w-5 h-5 text-primary" />
                     </div>
                     <div>
-                      <h3 className="font-serif text-lg text-foreground truncate">{insight.title || 'Untitled Document'}</h3>
+                      <h3 className="font-serif text-lg text-foreground truncate">{insight.title || 'Processing Intelligence...'}</h3>
                       <p className="text-sm text-foreground/70">{new Date(insight.created_at).toLocaleDateString()}</p>
                     </div>
                   </div>
@@ -236,10 +253,43 @@ export default function FilesPage() {
             className="fixed bottom-6 left-1/2 -translate-x-1/2 bg-surface border border-border shadow-lg rounded-full px-6 py-3 flex items-center gap-4"
           >
             <span className="font-medium">{selectedIds.size} selected</span>
-            <button onClick={handleBulkDelete} className="text-red-500 font-medium flex items-center gap-2">
+            <button onClick={() => setIsDeleteModalOpen(true)} className="text-red-500 font-medium flex items-center gap-2">
               <Trash className="w-4 h-4" /> Delete Selected
             </button>
           </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Delete Confirmation Modal */}
+      <AnimatePresence>
+        {isDeleteModalOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/80 backdrop-blur-sm">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="bg-surface border border-border rounded-3xl p-6 max-w-md w-full shadow-xl"
+            >
+              <h2 className="text-2xl font-serif font-medium mb-4">Delete Insights?</h2>
+              <p className="text-foreground/70 mb-8">
+                Are you sure you want to delete {selectedIds.size} insight{selectedIds.size === 1 ? '' : 's'}? This action cannot be undone.
+              </p>
+              <div className="flex justify-end gap-3">
+                <button
+                  onClick={() => setIsDeleteModalOpen(false)}
+                  className="px-5 py-2.5 rounded-full font-medium hover:bg-foreground/5 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleBulkDelete}
+                  className="px-5 py-2.5 rounded-full font-medium bg-red-500 text-white hover:bg-red-600 transition-colors"
+                >
+                  Confirm Delete
+                </button>
+              </div>
+            </motion.div>
+          </div>
         )}
       </AnimatePresence>
     </div>
