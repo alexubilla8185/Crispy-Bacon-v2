@@ -34,7 +34,7 @@ export default async function DashboardLayout({
       <PresenceInitializer email={userEmail} />
       <Sidebar email={userEmail} />
       
-      <main className="flex-1 overflow-y-auto relative flex flex-col">
+      <main className="flex-1 overflow-y-auto relative flex flex-col pb-24 md:pb-8">
         <div className="flex-1 bg-surface md:rounded-[32px] md:shadow-m3 flex flex-col">
           {children}
         </div>
