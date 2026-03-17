@@ -4,12 +4,14 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Home, Folder, Settings, Moon, Sun, PanelLeftClose, PanelLeftOpen, MessageSquare } from 'lucide-react';
 import { useUIStore } from '@/lib/store';
+import { useTheme } from 'next-themes';
 
 import { TactileButton } from '@/components/ui/TactileButton';
 import { CrunchWrapLogo } from '@/components/CrunchWrapLogo';
 
 export default function Sidebar({ email }: { email?: string }) {
-  const { isSidebarOpen, toggleSidebar, theme, toggleTheme } = useUIStore();
+  const { isSidebarOpen, toggleSidebar } = useUIStore();
+  const { theme, setTheme } = useTheme();
   const pathname = usePathname();
 
   const navItems = [
@@ -76,13 +78,13 @@ export default function Sidebar({ email }: { email?: string }) {
 
       <div className="p-4 flex flex-col gap-2">
         <TactileButton
-          onClick={toggleTheme}
+          onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
           className="flex items-center gap-3 px-4 py-3 rounded-full text-foreground/70 hover:bg-foreground/5 transition-colors duration-200 w-full bg-transparent"
-          aria-label={theme === 'charcoal' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+          aria-label={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
         >
-          {theme === 'charcoal' ? <Sun size={20} className="shrink-0" /> : <Moon size={20} className="shrink-0" />}
+          {theme === 'dark' ? <Sun size={20} className="shrink-0" /> : <Moon size={20} className="shrink-0" />}
           {isSidebarOpen && (
-            <span className="font-sans text-sm">{theme === 'charcoal' ? 'Light Mode' : 'Dark Mode'}</span>
+            <span className="font-sans text-sm">{theme === 'dark' ? 'Light Mode' : 'Dark Mode'}</span>
           )}
         </TactileButton>
         {isSidebarOpen && email && (

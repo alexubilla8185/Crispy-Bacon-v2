@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { useUIStore } from '@/lib/store';
+import { useTheme } from 'next-themes';
 import { clearAllInsights, getAllInsights, saveInsight } from '@/lib/storage/localDbService';
 import { TactileButton } from '@/components/ui/TactileButton';
 import { BrainCircuit, Database, User, LogOut, Trash2, Palette, Download } from 'lucide-react';
@@ -11,7 +12,8 @@ import { BrainCircuit, Database, User, LogOut, Trash2, Palette, Download } from 
 export default function SettingsPage() {
   const router = useRouter();
   const supabase = createClient();
-  const { aiPreferences, setAIPreferences, theme, toggleTheme } = useUIStore();
+  const { aiPreferences, setAIPreferences } = useUIStore();
+  const { theme, setTheme } = useTheme();
   
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const [isClearing, setIsClearing] = useState(false);
@@ -184,9 +186,9 @@ export default function SettingsPage() {
             </div>
             <div className="flex p-1 bg-background rounded-full border border-border w-fit">
               <button
-                onClick={() => theme !== 'sandstone' && toggleTheme()}
+                onClick={() => theme !== 'light' && setTheme('light')}
                 className={`px-6 py-2 rounded-full text-sm font-medium transition-all ${
-                  theme === 'sandstone'
+                  theme === 'light'
                     ? 'bg-primary text-primary-foreground shadow-sm'
                     : 'text-foreground/70 hover:text-foreground'
                 }`}
@@ -194,9 +196,9 @@ export default function SettingsPage() {
                 Light Mode
               </button>
               <button
-                onClick={() => theme !== 'charcoal' && toggleTheme()}
+                onClick={() => theme !== 'dark' && setTheme('dark')}
                 className={`px-6 py-2 rounded-full text-sm font-medium transition-all ${
-                  theme === 'charcoal'
+                  theme === 'dark'
                     ? 'bg-primary text-primary-foreground shadow-sm'
                     : 'text-foreground/70 hover:text-foreground'
                 }`}

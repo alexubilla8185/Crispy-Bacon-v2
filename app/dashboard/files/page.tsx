@@ -17,7 +17,20 @@ import { motion, AnimatePresence } from 'motion/react';
 export default function FilesPage() {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
-  const [viewMode, setViewMode] = useState<'list' | 'grid'>('list');
+  const [viewMode, setViewModeState] = useState<'list' | 'grid'>('grid');
+
+  useEffect(() => {
+    const savedMode = localStorage.getItem('filesViewMode');
+    if (savedMode === 'list' || savedMode === 'grid') {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setViewModeState(savedMode);
+    }
+  }, []);
+
+  const setViewMode = (mode: 'list' | 'grid') => {
+    setViewModeState(mode);
+    localStorage.setItem('filesViewMode', mode);
+  };
   const [sortBy, setSortBy] = useState<'newest' | 'oldest' | 'az'>('newest');
   const [filterType, setFilterType] = useState<'all' | 'audio' | 'documents'>('all');
   const [searchQuery, setSearchQuery] = useState('');
@@ -259,8 +272,10 @@ export default function FilesPage() {
                   {insight.processing_status === 'failed' && <AlertCircle className="w-4 h-4 text-red-500" />}
                   {(insight.processing_status === 'analyzing' || insight.processing_status === 'uploading') && <Loader2 className="w-4 h-4 text-primary animate-spin" />}
                 </div>
-                <div className="flex items-center gap-3 mt-1">
-                  {getIcon(insight, "w-5 h-5 text-primary shrink-0")}
+                <div className="flex items-center gap-3 mt-1 min-w-0 overflow-hidden">
+                  <div className="w-10 h-10 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center shrink-0">
+                    {getIcon(insight, "w-5 h-5 text-primary")}
+                  </div>
                   <h3 className="font-serif text-lg font-medium truncate group-hover:text-primary transition-colors">
                     {insight.title || insight.intelligence?.summary?.substring(0, 30) || 'Processing Intelligence...'}
                   </h3>
@@ -284,11 +299,11 @@ export default function FilesPage() {
                   onClick={() => router.push(`/dashboard/files/${insight.id}`)}
                   className="cursor-pointer"
                 >
-                  <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 rounded-full bg-background border border-border flex items-center justify-center shrink-0">
+                  <div className="flex items-center gap-4 min-w-0 overflow-hidden">
+                    <div className="w-10 h-10 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center shrink-0">
                       {getIcon(insight, "w-5 h-5 text-primary")}
                     </div>
-                    <div>
+                    <div className="min-w-0 overflow-hidden">
                       <h3 className="font-serif text-lg text-foreground truncate">{insight.title || insight.intelligence?.summary?.substring(0, 30) || 'Processing Intelligence...'}</h3>
                       <p className="text-sm text-foreground/70">{new Date(insight.created_at).toLocaleDateString()}</p>
                     </div>

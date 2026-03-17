@@ -15,6 +15,7 @@ export const InsightSchema = z.object({
   title: z.string(),
   raw_content: z.any(), // Accepts string, Blob, File, etc.
   processing_status: z.enum(['local', 'uploading', 'analyzing', 'completed', 'failed']),
+  audio_url: z.string().optional(),
   intelligence: z.object({
     summary: z.string(),
     highlights: z.array(z.string()),

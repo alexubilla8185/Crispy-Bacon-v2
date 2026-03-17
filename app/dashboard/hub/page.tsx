@@ -21,6 +21,11 @@ export default function HubPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const supabase = createClient();
 
+  const getIcon = (insight: Insight, className: string) => {
+    const isAudio = insight.title?.toLowerCase().includes('audio') || (insight.raw_content instanceof Blob && insight.raw_content.type.startsWith('audio/'));
+    return isAudio ? <Mic className={className} /> : <FileText className={className} />;
+  };
+
   const { data: localInsights = [] } = useQuery({
     queryKey: ['localInsights'],
     queryFn: async () => {
@@ -234,9 +239,14 @@ export default function HubPage() {
                   {insight.processing_status === 'failed' && <AlertCircle className="w-4 h-4 text-red-500" />}
                   {(insight.processing_status === 'analyzing' || insight.processing_status === 'uploading') && <Loader2 className="w-4 h-4 text-primary animate-spin" />}
                 </div>
-                <h3 className="font-serif text-lg font-medium truncate group-hover:text-primary transition-colors">
-                  {insight.title || 'Untitled Document'}
-                </h3>
+                <div className="flex items-center gap-3 mt-1 min-w-0 overflow-hidden">
+                  <div className="w-10 h-10 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center shrink-0">
+                    {getIcon(insight, "w-5 h-5 text-primary")}
+                  </div>
+                  <h3 className="font-serif text-lg font-medium truncate group-hover:text-primary transition-colors">
+                    {insight.title || 'Untitled Document'}
+                  </h3>
+                </div>
                 <p className="text-sm text-foreground/70 line-clamp-2 mt-2 leading-relaxed">
                   {insight.intelligence?.summary || 'Processing intelligence...'}
                 </p>

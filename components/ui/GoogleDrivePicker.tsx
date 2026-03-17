@@ -191,6 +191,7 @@ export function GoogleDrivePicker() {
               scope: 'https://www.googleapis.com/auth/drive.readonly',
               callback: (tokenResponse: any) => {
                 if (tokenResponse && tokenResponse.access_token) {
+                  sessionStorage.setItem('gdrive_token', tokenResponse.access_token);
                   createPicker(tokenResponse.access_token);
                 }
               },
@@ -204,6 +205,7 @@ export function GoogleDrivePicker() {
           scope: 'https://www.googleapis.com/auth/drive.readonly',
           callback: (tokenResponse: any) => {
             if (tokenResponse && tokenResponse.access_token) {
+              sessionStorage.setItem('gdrive_token', tokenResponse.access_token);
               createPicker(tokenResponse.access_token);
             }
           },
@@ -226,8 +228,13 @@ export function GoogleDrivePicker() {
     }
     if (!isPickerLoaded || !tokenClientRef.current) return;
 
-    tokenClientRef.current.requestAccessToken({ prompt: '' });
-  }, [isPickerLoaded]);
+    const cachedToken = sessionStorage.getItem('gdrive_token');
+    if (cachedToken) {
+      createPicker(cachedToken);
+    } else {
+      tokenClientRef.current.requestAccessToken({ prompt: '' });
+    }
+  }, [isPickerLoaded, createPicker]);
 
   return (
     <button

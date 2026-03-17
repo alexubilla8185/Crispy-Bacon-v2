@@ -35,8 +35,8 @@ export function ChatDrawer({ isOpen, onClose, documentContext }: ChatDrawerProps
   };
 
   const suggestedPrompts = [
-    "Summarize the key decisions",
-    "What are the action items?",
+    "Summarize the core takeaways.",
+    "Identify any action items or follow-ups.",
   ];
 
   return (

@@ -1,18 +1,8 @@
 'use client';
 
-import { useEffect } from 'react';
-import { useUIStore } from '@/lib/store';
+import * as React from 'react';
+import { ThemeProvider as NextThemesProvider } from 'next-themes';
 
-export default function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const { theme } = useUIStore();
-
-  useEffect(() => {
-    if (theme === 'charcoal') {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
-  }, [theme]);
-
-  return <>{children}</>;
+export default function ThemeProvider({ children, ...props }: React.ComponentProps<typeof NextThemesProvider>) {
+  return <NextThemesProvider {...props}>{children}</NextThemesProvider>;
 }
