@@ -52,7 +52,13 @@ export function GoogleDrivePicker() {
           const response = await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`, {
             headers: { Authorization: `Bearer ${accessToken}` }
           });
-          content = await response.blob();
+          
+          // CRITICAL FIX: Distinguish between Text blobs and Audio blobs
+          if (mimeType.startsWith('text/') || mimeType === 'application/json') {
+            content = await response.text();
+          } else {
+            content = await response.blob();
+          }
         }
 
         // --- Ingestion Pipeline (similar to useFileDrop) ---
