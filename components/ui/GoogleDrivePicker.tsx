@@ -105,12 +105,15 @@ export function GoogleDrivePicker() {
           .upsert({
             id,
             user_id: user.id,
+            title: fileName,
             processing_status: 'analyzing',
             audio_url: typeof content === 'string' ? null : filePath,
             summary: 'Analyzing...',
           }, { onConflict: 'id' })
           .select()
           .single();
+
+        showToast('Analyzing document...', 'info');
 
         // Call API
         const apiBody: any = { 
@@ -124,14 +127,18 @@ export function GoogleDrivePicker() {
           apiBody.audioUrl = filePath;
         }
 
-        await fetch('/api/analyze', {
+        const response = await fetch('/api/analyze', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(apiBody),
         });
+
+        if (!response.ok) {
+          throw new Error('Analysis failed');
+        }
         
         queryClient.invalidateQueries({ queryKey: ['insights'] });
-        showToast('Import complete', 'success');
+        showToast('Analysis complete!', 'success');
 
         router.push(`/dashboard/files/${id}`);
 

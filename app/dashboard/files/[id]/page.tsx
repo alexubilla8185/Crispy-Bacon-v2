@@ -59,6 +59,13 @@ export default function InsightDetailPage({ params }: { params: Promise<{ id: st
       return data;
     },
     enabled: !!id && localInsight?.processing_status !== 'local' && localInsight?.processing_status !== 'uploading',
+    refetchInterval: (query) => {
+      const data = query.state.data as any;
+      if (data?.processing_status === 'analyzing' || data?.processing_status === 'uploading') {
+        return 3000; // Poll every 3 seconds
+      }
+      return false;
+    },
   });
 
   useEffect(() => {

@@ -12,5 +12,12 @@ export function createClient() {
     return createBrowserClient('https://placeholder.supabase.co', 'placeholder');
   }
 
-  return createBrowserClient(supabaseUrl, supabaseAnonKey);
+  return createBrowserClient(supabaseUrl, supabaseAnonKey, {
+    cookieOptions: {
+      maxAge: 31536000,
+    },
+    auth: {
+      persistSession: true,
+    }
+  });
 }

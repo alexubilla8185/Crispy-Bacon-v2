@@ -183,6 +183,7 @@ export function useAudioRecorder() {
                 .upsert({
                   id: id,
                   user_id: user.id,
+                  title: newInsight.title,
                   processing_status: 'analyzing',
                   audio_url: filePath,
                   summary: 'Analyzing...',

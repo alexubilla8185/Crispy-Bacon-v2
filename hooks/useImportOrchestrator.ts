@@ -121,6 +121,7 @@ export function useImportOrchestrator() {
               .upsert({
                 id: insight.id, // Use the original ID
                 user_id: user.id,
+                title: insight.title,
                 processing_status: 'analyzing',
                 audio_url: isDocument ? null : filePath,
                 summary: 'Analyzing...',

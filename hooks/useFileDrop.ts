@@ -144,6 +144,7 @@ export function useFileDrop() {
               .upsert({
                 id: id,
                 user_id: user.id,
+                title: file.name,
                 processing_status: 'analyzing',
                 audio_url: isDocument ? null : filePath,
                 summary: 'Analyzing...',
