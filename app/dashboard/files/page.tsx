@@ -161,6 +161,18 @@ export default function FilesPage() {
   };
 
   const handleBulkDelete = async () => {
+    // Delete from Supabase
+    const { error: supabaseError } = await supabase
+      .from('insights')
+      .delete()
+      .in('id', Array.from(selectedIds));
+      
+    if (supabaseError) {
+      console.error('Failed to delete from Supabase:', supabaseError);
+      showToast('Cloud deletion failed', 'error');
+      return; 
+    }
+
     for (const id of selectedIds) {
       await deleteInsight(id);
     }

@@ -85,57 +85,55 @@ export function GoogleDrivePicker() {
           });
         });
 
-        router.push(`/dashboard/files/${id}`);
-
         // Foreground pipeline for Supabase upload
-        (async () => {
-          const { data: { user } } = await supabase.auth.getUser();
-          if (!user) throw new Error('No user session');
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) throw new Error('No user session');
 
-          let filePath = '';
-          if (typeof content === 'string') {
-            filePath = `${user.id}/${Date.now()}-${id}.md`;
-            // Upload text content as file
-            await supabase.storage.from('meetings').upload(filePath, content, { contentType: 'text/markdown' });
-          } else {
-            const blob = content as Blob;
-            filePath = `${user.id}/${Date.now()}-${id}`;
-            await supabase.storage.from('meetings').upload(filePath, blob, { contentType: blob.type });
-          }
+        let filePath = '';
+        if (typeof content === 'string') {
+          filePath = `${user.id}/${Date.now()}-${id}.md`;
+          // Upload text content as file
+          await supabase.storage.from('meetings').upload(filePath, content, { contentType: 'text/markdown' });
+        } else {
+          const blob = content as Blob;
+          filePath = `${user.id}/${Date.now()}-${id}`;
+          await supabase.storage.from('meetings').upload(filePath, blob, { contentType: blob.type });
+        }
 
-          const { data: dbInsight } = await supabase
-            .from('insights')
-            .upsert({
-              id,
-              user_id: user.id,
-              processing_status: 'analyzing',
-              audio_url: typeof content === 'string' ? null : filePath,
-              summary: 'Analyzing...',
-            }, { onConflict: 'id' })
-            .select()
-            .single();
+        const { data: dbInsight } = await supabase
+          .from('insights')
+          .upsert({
+            id,
+            user_id: user.id,
+            processing_status: 'analyzing',
+            audio_url: typeof content === 'string' ? null : filePath,
+            summary: 'Analyzing...',
+          }, { onConflict: 'id' })
+          .select()
+          .single();
 
-          // Call API
-          const apiBody: any = { 
-            insightId: dbInsight.id,
-            mimeType: finalMimeType,
-            isDeepAnalysisEnabled: false
-          };
-          if (typeof content === 'string') {
-            apiBody.textPayload = content;
-          } else {
-            apiBody.audioUrl = filePath;
-          }
+        // Call API
+        const apiBody: any = { 
+          insightId: dbInsight.id,
+          mimeType: finalMimeType,
+          isDeepAnalysisEnabled: false
+        };
+        if (typeof content === 'string') {
+          apiBody.textPayload = content;
+        } else {
+          apiBody.audioUrl = filePath;
+        }
 
-          await fetch('/api/analyze', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(apiBody),
-          });
-          
-          queryClient.invalidateQueries({ queryKey: ['insights'] });
-          showToast('Import complete', 'success');
-        })();
+        await fetch('/api/analyze', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(apiBody),
+        });
+        
+        queryClient.invalidateQueries({ queryKey: ['insights'] });
+        showToast('Import complete', 'success');
+
+        router.push(`/dashboard/files/${id}`);
 
       } catch (error) {
         console.error('Import failed:', error);
