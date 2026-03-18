@@ -205,6 +205,10 @@ export function useImportOrchestrator() {
                   updated_at: new Date().toISOString(),
                 });
               }
+
+              // Fallback cache invalidation
+              queryClient.invalidateQueries({ queryKey: ['insights'] });
+              queryClient.invalidateQueries({ queryKey: ['localInsights'] });
             }).catch(async (error) => {
               console.error(`Failed to analyze insight ${insight.id}:`, error);
               showToast(`Analysis failed for ${insight.title}: ${error instanceof Error ? error.message : 'Unknown error'}`, 'error');

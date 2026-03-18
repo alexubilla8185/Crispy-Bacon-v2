@@ -56,6 +56,9 @@ export function useInsightSubscription() {
               updated_at: new Date().toISOString(),
             });
           }
+
+          queryClient.invalidateQueries({ queryKey: ['insights'] });
+          queryClient.invalidateQueries({ queryKey: ['localInsights'] });
         }
       )
       .subscribe();

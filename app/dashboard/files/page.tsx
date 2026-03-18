@@ -17,12 +17,14 @@ import { motion, AnimatePresence } from 'motion/react';
 export default function FilesPage() {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
-  const [viewMode, setViewModeState] = useState<'list' | 'grid'>('grid');
+  const [viewMode, setViewModeState] = useState<'list' | 'grid'>('list');
+  const [isMounted, setIsMounted] = useState(false);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setIsMounted(true);
     const savedMode = localStorage.getItem('filesViewMode');
     if (savedMode === 'list' || savedMode === 'grid') {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setViewModeState(savedMode);
     }
   }, []);
@@ -233,7 +235,7 @@ export default function FilesPage() {
         </div>
       </header>
 
-      {isLoading ? (
+      {isLoading || !isMounted ? (
         <div className="flex-1 flex items-center justify-center">
           <span className="font-mono text-sm text-foreground/70 animate-pulse">Loading library...</span>
         </div>
