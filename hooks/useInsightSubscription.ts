@@ -31,16 +31,28 @@ export function useInsightSubscription() {
           const intelligence = payload.new.intelligence;
 
           // Update Cache
-          queryClient.setQueryData(['insight', id], (oldData: any) => ({
-            ...oldData,
-            ...payload.new,
-            processing_status: newStatus,
-            title: title || oldData?.title,
-            intelligence: intelligence || oldData?.intelligence
-          }));
+          queryClient.setQueryData(['insight', id], (oldData: any) => {
+            if (!oldData) return { ...payload.new, processing_status: newStatus, title: title, intelligence: intelligence };
+            return {
+              ...oldData,
+              ...payload.new,
+              processing_status: newStatus,
+              title: title || oldData.title,
+              intelligence: intelligence || oldData.intelligence
+            };
+          });
           
           queryClient.setQueryData(['insights'], (oldList: any[] | undefined) => {
-            if (!oldList) return oldList;
+            if (!oldList) return [payload.new];
+            const exists = oldList.some(item => item.id === id);
+            if (!exists) return [payload.new, ...oldList];
+            return oldList.map(item => item.id === id ? { ...item, ...payload.new, processing_status: newStatus, title: title || item.title } : item);
+          });
+
+          queryClient.setQueryData(['localInsights'], (oldList: any[] | undefined) => {
+            if (!oldList) return [payload.new];
+            const exists = oldList.some(item => item.id === id);
+            if (!exists) return [payload.new, ...oldList];
             return oldList.map(item => item.id === id ? { ...item, ...payload.new, processing_status: newStatus, title: title || item.title } : item);
           });
 

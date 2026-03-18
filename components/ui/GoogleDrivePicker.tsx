@@ -18,8 +18,6 @@ declare global {
 
 const CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
 const API_KEY = process.env.NEXT_PUBLIC_GOOGLE_API_KEY;
-const DISCOVERY_DOCS = ['https://www.googleapis.com/discovery/v1/apis/drive/v3/rest'];
-const SCOPES = 'https://www.googleapis.com/auth/drive.readonly';
 
 export function GoogleDrivePicker() {
   const [isPickerLoaded, setIsPickerLoaded] = useState(false);
@@ -53,7 +51,6 @@ export function GoogleDrivePicker() {
             headers: { Authorization: `Bearer ${accessToken}` }
           });
           
-          // CRITICAL FIX: Distinguish between Text blobs and Audio blobs
           if (mimeType.startsWith('text/') || mimeType === 'application/json') {
             content = await response.text();
           } else {
@@ -61,7 +58,6 @@ export function GoogleDrivePicker() {
           }
         }
 
-        // --- Ingestion Pipeline (similar to useFileDrop) ---
         const now = new Date().toISOString();
         const id = crypto.randomUUID();
         
@@ -69,11 +65,12 @@ export function GoogleDrivePicker() {
           id,
           title: fileName,
           raw_content: content,
-          processing_status: 'uploading',
+          processing_status: 'analyzing', // CRITICAL: Start at analyzing to prevent race condition
           created_at: now,
           updated_at: now,
         };
 
+        // 1. Save locally as 'analyzing'
         await saveInsight(newInsight);
         
         unstable_batchedUpdates(() => {
@@ -85,14 +82,13 @@ export function GoogleDrivePicker() {
           });
         });
 
-        // Foreground pipeline for Supabase upload
+        // 2. Upload to Supabase foreground
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) throw new Error('No user session');
 
         let filePath = '';
         if (typeof content === 'string') {
           filePath = `${user.id}/${Date.now()}-${id}.md`;
-          // Upload text content as file
           await supabase.storage.from('meetings').upload(filePath, content, { contentType: 'text/markdown' });
         } else {
           const blob = content as Blob;
@@ -100,6 +96,7 @@ export function GoogleDrivePicker() {
           await supabase.storage.from('meetings').upload(filePath, blob, { contentType: blob.type });
         }
 
+        // 3. Upsert to DB with TITLE included
         const { data: dbInsight } = await supabase
           .from('insights')
           .upsert({
@@ -113,9 +110,10 @@ export function GoogleDrivePicker() {
           .select()
           .single();
 
-        showToast('Analyzing document...', 'info');
+        // 4. INSTANT NAVIGATION! Don't wait for AI.
+        router.push(`/dashboard/files/${id}`);
 
-        // Call API
+        // 5. Fire AI request with keepalive so browser doesn't kill it during navigation
         const apiBody: any = { 
           insightId: dbInsight.id,
           mimeType: finalMimeType,
@@ -127,20 +125,16 @@ export function GoogleDrivePicker() {
           apiBody.audioUrl = filePath;
         }
 
-        const response = await fetch('/api/analyze', {
+        fetch('/api/analyze', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(apiBody),
-        });
-
-        if (!response.ok) {
-          throw new Error('Analysis failed');
-        }
-        
-        queryClient.invalidateQueries({ queryKey: ['insights'] });
-        showToast('Analysis complete!', 'success');
-
-        router.push(`/dashboard/files/${id}`);
+          keepalive: true // CRITICAL: Protects fetch from unmount cancellation
+        }).then(res => {
+          if (res.ok) {
+             queryClient.invalidateQueries({ queryKey: ['insights'] });
+          }
+        }).catch(err => console.error("API Error in background:", err));
 
       } catch (error) {
         console.error('Import failed:', error);
@@ -163,14 +157,10 @@ export function GoogleDrivePicker() {
   }, [pickerCallback]);
 
   useEffect(() => {
-    if (!CLIENT_ID || !API_KEY) {
-      console.warn('Google Drive Picker requires NEXT_PUBLIC_GOOGLE_CLIENT_ID and NEXT_PUBLIC_GOOGLE_API_KEY');
-      return;
-    }
-
+    if (!CLIENT_ID || !API_KEY) return;
     let isMounted = true;
-
     const loadScripts = () => {
+      // (Google Script Loading Logic Remains Exactly the Same)
       if (!document.querySelector('script[src="https://apis.google.com/js/api.js"]')) {
         const gapiScript = document.createElement('script');
         gapiScript.src = 'https://apis.google.com/js/api.js';
@@ -223,22 +213,12 @@ export function GoogleDrivePicker() {
         });
       }
     };
-
     loadScripts();
-
-    return () => {
-      isMounted = false;
-    };
+    return () => { isMounted = false; };
   }, [createPicker]);
 
   const handleDriveClick = useCallback(() => {
-    if (!process.env.NEXT_PUBLIC_GOOGLE_API_KEY || !process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID) {
-      console.error("Google API Keys are missing. Ensure NEXT_PUBLIC_ variables are set.");
-      alert("Configuration Error: Missing Google API Keys.");
-      return;
-    }
     if (!isPickerLoaded || !tokenClientRef.current) return;
-
     const cachedToken = sessionStorage.getItem('gdrive_token');
     if (cachedToken) {
       createPicker(cachedToken);
